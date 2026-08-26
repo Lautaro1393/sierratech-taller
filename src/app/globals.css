@@ -1,0 +1,149 @@
+@import "tailwindcss";
+
+@theme {
+  /* Surface Colors - Dark Theme Base */
+  --color-surface-base: #0D1117;
+  --color-surface-elevated: #18243D;
+  --color-surface-hover: #1E2D4D;
+  
+  /* Accent - SierraTech Green */
+  --color-accent: #2EDC1B;
+  --color-accent-dim: #1FA814;
+  --color-accent-glow: rgba(46, 220, 27, 0.3);
+  
+  /* Ink - Text Colors */
+  --color-ink-primary: #DCE2F3;
+  --color-ink-secondary: #8892A8;
+  --color-ink-muted: #4A5568;
+  
+  /* Status Colors */
+  --color-status-green: #22C55E;
+  --color-status-yellow: #EAB308;
+  --color-status-red: #EF4444;
+  --color-status-blue: #3B82F6;
+  
+  /* Kanban Column Colors */
+  --color-column-ingresado: #3B82F6;
+  --color-column-diagnostico: #8B5CF6;
+  --color-column-repuesto: #F59E0B;
+  --color-column-reparacion: #EC4899;
+  --color-column-listo: #22C55E;
+  --color-column-entregado: #6B7280;
+  
+  /* Fonts */
+  --font-display: "Space Grotesk", system-ui, sans-serif;
+  --font-body: "Geist", system-ui, sans-serif;
+  --font-mono: "JetBrains Mono", monospace;
+  
+  /* Spacing (8px grid) */
+  --spacing-xs: 4px;
+  --spacing-sm: 8px;
+  --spacing-md: 16px;
+  --spacing-lg: 24px;
+  --spacing-xl: 32px;
+  --spacing-2xl: 48px;
+  
+  /* Border Radius */
+  --radius-sm: 6px;
+  --radius-md: 12px;
+  --radius-lg: 16px;
+  --radius-full: 9999px;
+  
+  /* Shadows */
+  --shadow-glow: 0 0 20px var(--color-accent-glow);
+  --shadow-card: 0 4px 24px rgba(0, 0, 0, 0.3);
+}
+
+/* Base Styles */
+html {
+  scroll-behavior: smooth;
+}
+
+body {
+  background: var(--color-surface-base);
+  color: var(--color-ink-primary);
+  font-family: var(--font-body);
+  line-height: 1.6;
+  min-height: 100vh;
+}
+
+/* Glass Effect Utility */
+.glass {
+  background: rgba(24, 36, 61, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-card {
+  background: rgba(24, 36, 61, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+}
+
+.glass-card-interactive {
+  background: rgba(24, 36, 61, 0.8);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  border-radius: var(--radius-md);
+  transition: all 0.2s ease;
+}
+
+.glass-card-interactive:hover {
+  box-shadow: var(--shadow-glow);
+  border-color: rgba(46, 220, 27, 0.3);
+  transform: translateY(-2px);
+}
+
+/* Semaphore Borders */
+.semaphore-green {
+  border-left: 3px solid var(--color-status-green);
+}
+
+.semaphore-yellow {
+  border-left: 3px solid var(--color-status-yellow);
+}
+
+.semaphore-red {
+  border-left: 3px solid var(--color-status-red);
+  animation: pulse-urgent 2s infinite;
+}
+
+@keyframes pulse-urgent {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.7; }
+}
+
+/* Typography Utilities */
+.font-display {
+  font-family: var(--font-display);
+}
+
+.font-mono {
+  font-family: var(--font-mono);
+}
+
+/* Selection Color */
+::selection {
+  background: var(--color-accent);
+  color: var(--color-surface-base);
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+  width: 8px;
+  height: 8px;
+}
+
+::-webkit-scrollbar-track {
+  background: var(--color-surface-base);
+}
+
+::-webkit-scrollbar-thumb {
+  background: var(--color-surface-hover);
+  border-radius: var(--radius-full);
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-ink-muted);
+}
