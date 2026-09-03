@@ -1,7 +1,7 @@
 "use client";
 
 import { useAuth } from "@/components/auth-provider";
-import { Sidebar } from "@/components/layout/sidebar";
+import { Header, Sidebar } from "@/components/layout";
 
 export default function DashboardLayout({ children }: { children: React.ReactNode }) {
   const { loading } = useAuth();
@@ -21,6 +21,7 @@ export default function DashboardLayout({ children }: { children: React.ReactNod
     <div className="min-h-screen bg-surface-base">
       <Sidebar />
       <main className="pl-64 min-h-screen">
+        <Header />
         <div className="p-6">
           {children}
         </div>
