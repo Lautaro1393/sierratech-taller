@@ -35,13 +35,13 @@
   --font-body: "Geist", system-ui, sans-serif;
   --font-mono: "JetBrains Mono", monospace;
   
-  /* Spacing (8px grid) */
-  --spacing-xs: 4px;
-  --spacing-sm: 8px;
-  --spacing-md: 16px;
-  --spacing-lg: 24px;
-  --spacing-xl: 32px;
-  --spacing-2xl: 48px;
+  /* Spacing tokens (8px grid) — use --size-* namespace para no chocar con --spacing de Tailwind 4 */
+  --size-xs: 4px;
+  --size-sm: 8px;
+  --size-md: 16px;
+  --size-lg: 24px;
+  --size-xl: 32px;
+  --size-2xl: 48px;
   
   /* Border Radius */
   --radius-sm: 6px;
