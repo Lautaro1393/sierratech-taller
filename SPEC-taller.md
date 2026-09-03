@@ -118,16 +118,16 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 - [ ] 1.1.6 Commit y push
 
 ### Fase 2: Auth y Layout
-- [ ] 2.1 Login con Supabase Auth
-- [ ] 2.2 Middleware para proteger rutas
-- [ ] 2.3 Layout con sidebar + header
-- [ ] 2.4 Dashboard con stats
+- [x] 2.1 Login con Supabase Auth
+- [x] 2.2 Middleware para proteger rutas (renombrado a `proxy.ts` en Next 16)
+- [x] 2.3 Layout con sidebar + header
+- [x] 2.4 Dashboard con stats
 
 ### Fase 3: Kanban Board
-- [ ] 3.1 Board con columnas por estado
-- [ ] 3.2 Tarjetas de orden con semáforo
-- [ ] 3.3 Drag & drop entre columnas
-- [ ] 3.4 Acciones rápidas (WhatsApp, cambiar estado)
+- [x] 3.1 Board con columnas por estado
+- [x] 3.2 Tarjetas de orden con semáforo
+- [x] 3.3 Drag & drop entre columnas
+- [x] 3.4 Acciones rápidas (WhatsApp, ver detalle)
 
 ### Fase 4: Formulario de Ingreso
 - [ ] 4.1 Autocomplete de clientes
@@ -150,11 +150,29 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 
 ## 6. Tareas Pendientes Detalladas
 
-### Fase 1.6: Commit y Push
-- [ ] Crear archivo SPEC-taller.md
-- [ ] git init / git add
-- [ ] git commit
-- [ ] git push
+### Fase 1.6: Commit y Push ✅
+- [x] Crear archivo SPEC-taller.md
+- [x] git init / git add
+- [x] git commit
+- [x] git push
+
+### Fase 2: Auth y Layout ✅
+- [x] 2.1 Login con Supabase Auth
+- [x] 2.2 Middleware para proteger rutas (renombrado a `proxy.ts`)
+- [x] 2.3 Layout con sidebar + header
+- [x] 2.4 Dashboard con stats
+
+### Fase 3: Kanban Board ✅
+- [x] 3.1 Board con columnas por estado
+- [x] 3.2 Tarjetas de orden con semáforo
+- [x] 3.3 Drag & drop entre columnas
+- [x] 3.4 Acciones rápidas (WhatsApp, ver detalle)
+
+### Fase 4: Formulario de Ingreso (próximo)
+- [ ] 4.1 Autocomplete de clientes
+- [ ] 4.2 Selector de equipo
+- [ ] 4.3 Scanner QR de serie
+- [ ] 4.4 Upload de fotos con compresión
 
 ---
 

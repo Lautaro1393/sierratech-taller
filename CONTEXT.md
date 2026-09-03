@@ -46,14 +46,18 @@ C:\Users\lauta\
 
 ### 3.2 `sierratech-taller` (este repo)
 
-- HEAD = `origin/main` = `95271a6`. Working tree limpio. Sincronizado con GitHub.
-- Commits:
+- HEAD = `origin/main` = `3852d68`. Working tree limpio. Sincronizado con GitHub.
+- Commits (top → bottom del log):
   1. `a02e569` — Fase 1.1: Setup inicial (Next.js 16 + TS + Tailwind 4 + Supabase clients).
   2. `b373ae9` — Fase 1.2: Login, Auth y Dashboard.
   3. `8722780` — test git email config.
   4. `95271a6` — fix sidebar layout (`pl-64` en lugar de `ml-64`).
-- README y `CONTEXT.md` actualizados el 2026-09-03.
-- **Fases 2–6 de `SPEC-taller.md` pendientes.**
+  5. `268ce49` — CONTEXT.md vivo + reemplazo README boilerplate.
+  6. **Fase 2** (7 commits: `0045214`…`8a04794`): proxy migrado, AuthProvider único, page.tsx default fuera, Header en dashboard, errores Supabase mapeados, Dashboard Server Component, placeholders para rutas pendientes, lucide-react + zod instalados.
+  7. **Fase 3** (4 commits: `ad887dc`…`29780cd`): server action `actualizarEstadoOrden` con historial, server component `/kanban` con fetch + joins, `KanbanBoard` con `@dnd-kit` (DndContext, 5 columnas, DragOverlay), cards con semáforo + WhatsApp + ver detalle.
+  8. `3852d68` — fix CSS: tokens custom `--spacing-*` → `--size-*` (rompía `max-w-*` en toda la app).
+- **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`). Schema completo aplicado (4 tablas, enum, RLS, indices, trigger). 3 clientes, 4 equipos, 6 órdenes (una por estado activo + 1 entregada), 3 entradas de historial. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
+- **Fases 4–6 de `SPEC-taller.md` pendientes.**
 
 ## 4. Spec del taller (resumen ejecutivo)
 
@@ -105,17 +109,18 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
 
 - [x] **Fase 1.1** — Setup Next.js + TS + Tailwind + clientes Supabase.
 - [x] **Fase 1.2** — Login + Auth + Dashboard.
-- [ ] **Fase 2** — Auth refinada + Middleware + Layout (sidebar + header) + Dashboard con stats reales.
-- [ ] **Fase 3** — Kanban board: columnas por estado, tarjetas con semáforo, drag & drop, acciones rápidas.
+- [x] **Fase 2** — Auth refinada (errores Supabase mapeados) + Proxy (era Middleware, renombrado en Next 16) + Layout (sidebar + header renderizado) + Dashboard Server Component con stats reales desde Supabase.
+- [x] **Fase 3** — Kanban board: 5 columnas por estado, server component fetch con joins (orden + equipo + cliente), drag & drop con `@dnd-kit/core` (PointerSensor + DndContext + DragOverlay), tarjetas con semáforo, acciones rápidas (WhatsApp con mensaje por estado, ver detalle), server action `actualizarEstadoOrden` que crea entrada en `historial_estados`. Optimistic UI con rollback si falla.
 - [ ] **Fase 4** — Formulario de ingreso: autocomplete clientes, scanner QR de serie, upload de fotos con compresión.
 - [ ] **Fase 5** — Detalle de orden: timeline, notas y fotos al historial, editar presupuesto, cambio de estado rápido.
 - [ ] **Fase 6** — Portal de tracking público: ruta `/tracking/[token]`, vista simplificada para cliente, QR de acceso.
 
 ## 6. Gotchas críticos
 
-1. **Next.js 16.3.3 rompe convenciones.** El `AGENTS.md` del proyecto lo advierte: APIs, convenciones y estructura de archivos pueden diferir de versiones anteriores. **Antes de escribir código nuevo, leer la doc local en `node_modules/next/dist/docs/`.** Verificar deprecation notices.
-2. **Sidebar Vercel "raro".** El último deploy se veía mal por bug del sidebar (commit `95271a6` lo arregla con `pl-64` en vez de `ml-64`). Ese fix ya está en `origin/main`, así que Vercel ya debería haberlo redesplegado. **Verificar el deploy antes de empezar Fase 2.**
+1. **Next.js 16.3.3 rompe convenciones.** El `AGENTS.md` del proyecto lo advierte: APIs, convenciones y estructura de archivos pueden diferir de versiones anteriores. **Antes de escribir código nuevo, leer la doc local en `node_modules/next/dist/docs/`.** Verificar deprecation notices. Breaking changes ya encontrados: `middleware.ts` → `proxy.ts` (export `proxy`), `params` y `searchParams` ahora son `Promise<...>`.
+2. **Tailwind 4 + `@theme` namespace conflict.** El bloque `@theme` en `globals.css` NO debe usar `--spacing-*` para tokens custom (Tailwind 4 usa ese namespace para generar `max-w-*`, `w-*`, `h-*`, `p-*`, `gap-*`, etc.). Usar `--size-*` o cualquier otro prefijo no reservado. **Bug histórico**: el commit `3852d68` arregló un caso donde `--spacing-md: 16px` colapsaba `max-w-md` a 16px en toda la app.
 3. **Variables de entorno del taller.** `.env.local` con keys de Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) — **NO se commitea** (cubierto por `.gitignore`). `.env.example` sí está versionado como template.
+4. **MCP Supabase instalado** en `opencode.json` (per-project, scope `crjtucqucgxiqcnhpmgs`, features `database,docs`). Sirve para ejecutar SQL y consultar docs desde la sesión. Auth via OAuth. Storage no habilitado (agregar cuando llegue Fase 4).
 
 ## 7. Convenciones de trabajo
 
@@ -133,18 +138,24 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
 ## 8. Próximos pasos sugeridos
 
 ### Inmediato
-1. Verificar el deploy de Vercel post-fix sidebar (commit `95271a6`). Si sigue viéndose mal, abrir DevTools remoto y reportar.
-2. Confirmar que `.env.local` está completo antes de levantar `npm run dev`.
+1. ✅ ~~Verificar el deploy de Vercel post-fix sidebar~~ (resuelto en `95271a6`, y los fixes de CSS en `3852d68` ya están pusheados).
+2. ✅ ~~Fase 2 y Fase 3 completas~~.
+3. **Fase 4: formulario de ingreso** (próximo).
 
-### Corto plazo (Fase 2)
-1. Refinar el flujo de login (errores, redirect post-login).
-2. Middleware de Next.js para proteger rutas del grupo `(dashboard)`.
-3. Layout con sidebar persistente + header glass (consistente con el sitio público).
-4. Dashboard con stats reales consultando Supabase.
+### Corto plazo (Fase 4)
+1. Form de nueva orden en `/kanban` o ruta dedicada (`/ordenes/nueva`).
+2. Autocomplete de clientes existentes con combobox.
+3. Crear cliente nuevo inline (modal o sección colapsable).
+4. Selector de equipo (re-uso o nuevo).
+5. Validación con `zod` (ya instalado).
+6. Server action `crearOrden` con transacción cliente + equipo + orden + historial.
+7. Mobile-first: el técnico recibe equipos con el celular.
 
-### Mediano plazo (Fase 3)
-1. Kanban con `@dnd-kit/core` — el grueso del backoffice.
-2. Acciones rápidas en tarjetas (WhatsApp al cliente, cambio de estado).
+### Mediano plazo (Fase 5)
+1. Pantalla `/ordenes/[id]` con timeline del historial.
+2. Editor de presupuesto, switch de urgencia.
+3. Cambio de estado rápido (chips o dropdown).
+4. Upload de fotos con compresión client-side.
 
 ## 9. Referencias cruzadas
 
