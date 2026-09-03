@@ -1,5 +1,7 @@
+import Link from "next/link";
 import { createServerClient } from "@/lib/supabase";
 import { KanbanBoard } from "@/components/kanban/kanban-board";
+import { Button } from "@/components/ui/button";
 import type { OrdenConRelaciones } from "@/types";
 
 const ESTADOS_ACTIVOS = [
@@ -52,6 +54,24 @@ export default async function KanbanPage() {
             {ordenes.length} {ordenes.length === 1 ? "orden activa" : "órdenes activas"} · arrastrá entre columnas
           </p>
         </div>
+        <Link href="/ordenes/nueva">
+          <Button>
+            <svg
+              className="w-4 h-4"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 4v16m8-8H4"
+              />
+            </svg>
+            Nueva Orden
+          </Button>
+        </Link>
       </div>
 
       <KanbanBoard ordenes={ordenes} />

@@ -54,7 +54,7 @@ export default async function DashboardPage() {
           </h1>
           <p className="text-ink-secondary mt-1">Resumen de tu taller</p>
         </div>
-        <Link href="/kanban">
+        <Link href="/ordenes/nueva">
           <Button>
             <svg
               className="w-4 h-4"
