@@ -1,7 +1,7 @@
 # SierraTech — Contexto de proyecto
 
 > Snapshot para que cualquier sesión nueva entienda el estado sin reconstruir historia.
-> Última actualización: 2026-09-03.
+> Última actualización: 2026-09-03 (sesión vespertina).
 
 ## 1. La marca
 
@@ -46,7 +46,7 @@ C:\Users\lauta\
 
 ### 3.2 `sierratech-taller` (este repo)
 
-- HEAD = `origin/main` = `3852d68`. Working tree limpio. Sincronizado con GitHub.
+- HEAD = `origin/main` = `5e9e723`. Working tree limpio. Sincronizado con GitHub.
 - Commits (top → bottom del log):
   1. `a02e569` — Fase 1.1: Setup inicial (Next.js 16 + TS + Tailwind 4 + Supabase clients).
   2. `b373ae9` — Fase 1.2: Login, Auth y Dashboard.
@@ -56,8 +56,12 @@ C:\Users\lauta\
   6. **Fase 2** (7 commits: `0045214`…`8a04794`): proxy migrado, AuthProvider único, page.tsx default fuera, Header en dashboard, errores Supabase mapeados, Dashboard Server Component, placeholders para rutas pendientes, lucide-react + zod instalados.
   7. **Fase 3** (4 commits: `ad887dc`…`29780cd`): server action `actualizarEstadoOrden` con historial, server component `/kanban` con fetch + joins, `KanbanBoard` con `@dnd-kit` (DndContext, 5 columnas, DragOverlay), cards con semáforo + WhatsApp + ver detalle.
   8. `3852d68` — fix CSS: tokens custom `--spacing-*` → `--size-*` (rompía `max-w-*` en toda la app).
-- **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`). Schema completo aplicado (4 tablas, enum, RLS, indices, trigger). 3 clientes, 4 equipos, 6 órdenes (una por estado activo + 1 entregada), 3 entradas de historial. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
-- **Fases 4–6 de `SPEC-taller.md` pendientes.**
+  9. **Fase 4** (5 commits: `7659c30`…`5e9e723`): zod schemas, `crearOrden` server action, página `/ordenes/nueva`, `OrdenForm` + `ClienteAutocomplete` mobile-first, links "Nueva Orden" en Dashboard y Kanban. **Falta:** 4.3 (scanner QR) y 4.4 (upload fotos con compresión) — pendientes de definir storage.
+  10. `33c1df9` — docs: actualizar CONTEXT.md y SPEC-taller.md.
+- **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`). Schema completo aplicado (4 tablas, enum, RLS, indices, trigger). 3 clientes, 4 equipos, **7 órdenes** (la OT-0007 se creó en la prueba E2E de Fase 4 con cliente Lucía, equipo Acer Aspire 5), 3 entradas de historial. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
+- **Vercel**: proyecto recreado y linkeado a GitHub (`prj_ijMCD6lX6svfVk5tnovM97TNnrUz`, team `lautaro1393s-projects`). **Pendiente del user:** configurar env vars `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en Vercel Dashboard (Settings → Environment Variables) y verificar que dispare el primer deploy.
+- **MCPs configurados** en `opencode.json` per-project: Supabase (database+docs, project_ref `crjtucqucgxiqcnhpmgs`) y Vercel (remoto OAuth). El MCP de Vercel no lista el proyecto nuevo aún (bug de cache — necesita time o reauth).
+- **Fases 5–6 de `SPEC-taller.md` pendientes.**
 
 ## 4. Spec del taller (resumen ejecutivo)
 
@@ -111,7 +115,7 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
 - [x] **Fase 1.2** — Login + Auth + Dashboard.
 - [x] **Fase 2** — Auth refinada (errores Supabase mapeados) + Proxy (era Middleware, renombrado en Next 16) + Layout (sidebar + header renderizado) + Dashboard Server Component con stats reales desde Supabase.
 - [x] **Fase 3** — Kanban board: 5 columnas por estado, server component fetch con joins (orden + equipo + cliente), drag & drop con `@dnd-kit/core` (PointerSensor + DndContext + DragOverlay), tarjetas con semáforo, acciones rápidas (WhatsApp con mensaje por estado, ver detalle), server action `actualizarEstadoOrden` que crea entrada en `historial_estados`. Optimistic UI con rollback si falla.
-- [ ] **Fase 4** — Formulario de ingreso: autocomplete clientes, scanner QR de serie, upload de fotos con compresión.
+- [x] **Fase 4** — Formulario de ingreso (parcial): zod schemas, server action `crearOrden`, página `/ordenes/nueva`, `OrdenForm` + `ClienteAutocomplete` mobile-first, links en Dashboard y Kanban. **Falta:** 4.3 scanner QR, 4.4 upload fotos (requiere definir Supabase Storage bucket primero).
 - [ ] **Fase 5** — Detalle de orden: timeline, notas y fotos al historial, editar presupuesto, cambio de estado rápido.
 - [ ] **Fase 6** — Portal de tracking público: ruta `/tracking/[token]`, vista simplificada para cliente, QR de acceso.
 
@@ -137,25 +141,28 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
 
 ## 8. Próximos pasos sugeridos
 
-### Inmediato
-1. ✅ ~~Verificar el deploy de Vercel post-fix sidebar~~ (resuelto en `95271a6`, y los fixes de CSS en `3852d68` ya están pusheados).
-2. ✅ ~~Fase 2 y Fase 3 completas~~.
-3. **Fase 4: formulario de ingreso** (próximo).
+### Inmediato (manuales, requieren browser del user)
+1. **Vercel Dashboard** → `sierratech-taller` → Settings → Environment Variables. Agregar:
+   - `NEXT_PUBLIC_SUPABASE_URL` (target: Production + Preview + Development)
+   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (idem)
+2. Verificar que dispare el primer deploy (debería ser automático al pushear a main). Si falla, abrir el build log y pegar acá.
+3. **Bug pre-existente** detectado pero NO arreglado: el sidebar fixed de 256px se superpone al contenido en mobile (390px). Es del `(dashboard)/layout.tsx` de Fase 1.2. Fix mínimo: `pl-0 md:pl-64` en el `<main>`. Fix ideal: sidebar off-canvas con hamburger en mobile.
 
-### Corto plazo (Fase 4)
-1. Form de nueva orden en `/kanban` o ruta dedicada (`/ordenes/nueva`).
-2. Autocomplete de clientes existentes con combobox.
-3. Crear cliente nuevo inline (modal o sección colapsable).
-4. Selector de equipo (re-uso o nuevo).
-5. Validación con `zod` (ya instalado).
-6. Server action `crearOrden` con transacción cliente + equipo + orden + historial.
-7. Mobile-first: el técnico recibe equipos con el celular.
+### Corto plazo (Fase 4 — completar)
+1. Definir Supabase Storage: crear bucket `fotos` (público, con policy de upload autenticado).
+2. 4.4 Upload de fotos con compresión client-side (canvas resize antes de subir).
+3. 4.3 Scanner QR de serie (librería `qr-scanner` o similar).
 
 ### Mediano plazo (Fase 5)
-1. Pantalla `/ordenes/[id]` con timeline del historial.
+1. Pantalla `/ordenes/[id]` con timeline del historial (ya hay datos de prueba).
 2. Editor de presupuesto, switch de urgencia.
 3. Cambio de estado rápido (chips o dropdown).
-4. Upload de fotos con compresión client-side.
+4. Acciones: editar nota, agregar foto, marcar como entregado/cancelado.
+
+### Mediano plazo (Fase 6)
+1. Portal `/tracking/[token]` con vista simplificada para cliente.
+2. QR de acceso generado por la app (o link compartible).
+3. Mejorar la policy de RLS para que el `public_token` sea accesible sin auth (la del schema actual tiene un bug en `current_setting`).
 
 ## 9. Referencias cruzadas
 
