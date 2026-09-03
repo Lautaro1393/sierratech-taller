@@ -15,15 +15,32 @@ export function LoginForm() {
   const router = useRouter();
   const { signIn } = useAuth();
 
+  const mapAuthError = (err: Error): string => {
+    const message = err.message.toLowerCase();
+    if (message.includes("invalid login credentials") || message.includes("invalid credentials")) {
+      return "Email o contraseña incorrectos.";
+    }
+    if (message.includes("email not confirmed")) {
+      return "Confirmá tu email antes de ingresar.";
+    }
+    if (message.includes("too many requests") || message.includes("rate limit")) {
+      return "Demasiados intentos. Esperá unos minutos.";
+    }
+    if (message.includes("network") || message.includes("fetch")) {
+      return "Sin conexión. Revisá tu internet.";
+    }
+    return "No pudimos iniciar sesión. Probá de nuevo.";
+  };
+
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setError("");
     setLoading(true);
 
     const { error } = await signIn(email, password);
-    
+
     if (error) {
-      setError("Email o contraseña incorrectos");
+      setError(mapAuthError(error));
       setLoading(false);
     } else {
       router.push("/");
