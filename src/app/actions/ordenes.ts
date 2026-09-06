@@ -5,11 +5,16 @@ import { redirect } from "next/navigation";
 import { createServerClient } from "@/lib/supabase";
 import type { EstadoOrden } from "@/types";
 import { ordenFormSchema, type OrdenFormInput } from "@/lib/validations/orden";
+import { autoStopSesionActiva } from "./tiempo";
+
+export type ActualizarEstadoResult =
+  | { ok: true; pausaSugerida?: boolean; autoStop?: boolean }
+  | { ok: false; error: string };
 
 export async function actualizarEstadoOrden(
   ordenId: string,
   nuevoEstado: EstadoOrden
-): Promise<{ ok: boolean; error?: string }> {
+): Promise<ActualizarEstadoResult> {
   const supabase = await createServerClient();
 
   const { data: ordenActual, error: fetchError } = await supabase
@@ -35,6 +40,16 @@ export async function actualizarEstadoOrden(
     return { ok: false, error: updateError.message };
   }
 
+  // Auto-stop del timer si la orden se cierra definitivamente
+  let autoStop = false;
+  if (nuevoEstado === "entregado" || nuevoEstado === "cancelado") {
+    await autoStopSesionActiva(
+      ordenId,
+      `Orden marcada como ${nuevoEstado}`
+    );
+    autoStop = true;
+  }
+
   await supabase.from("historial_estados").insert({
     orden_id: ordenId,
     estado_anterior: ordenActual.estado,
@@ -46,7 +61,13 @@ export async function actualizarEstadoOrden(
 
   revalidatePath("/kanban");
   revalidatePath("/");
-  return { ok: true };
+  revalidatePath(`/ordenes/${ordenId}`);
+
+  return {
+    ok: true,
+    pausaSugerida: nuevoEstado === "esperando_repuesto" ? true : undefined,
+    autoStop: autoStop ? true : undefined,
+  };
 }
 
 export type CrearOrdenResult =

@@ -58,6 +58,7 @@ C:\Users\lauta\
   8. `3852d68` — fix CSS: tokens custom `--spacing-*` → `--size-*` (rompía `max-w-*` en toda la app).
   9. **Fase 4** (5 commits: `7659c30`…`5e9e723`): zod schemas, `crearOrden` server action, página `/ordenes/nueva`, `OrdenForm` + `ClienteAutocomplete` mobile-first, links "Nueva Orden" en Dashboard y Kanban. **Falta:** 4.3 (scanner QR) y 4.4 (upload fotos con compresión) — pendientes de definir storage.
   10. `33c1df9` — docs: actualizar CONTEXT.md y SPEC-taller.md.
+  11. **Fase 7** (N commits, sin pushear aún): schema `app_settings` + `tiempo_sesiones`, server actions (start/pause/resume/stop), página `/settings`, `TemporizadorCard` con timer en vivo + costo + margen, indicador global en sidebar, auto-prompt al mover a `esperando_repuesto`, auto-stop al cerrar orden. **Migración SQL pendiente de aplicar en Supabase** (archivo: `supabase/migrations/2026-09-06-tiempo-control.sql`).
 - **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`). Schema completo aplicado (4 tablas, enum, RLS, indices, trigger). 3 clientes, 4 equipos, **7 órdenes** (la OT-0007 se creó en la prueba E2E de Fase 4 con cliente Lucía, equipo Acer Aspire 5), 3 entradas de historial. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
 - **Vercel**: proyecto recreado y linkeado a GitHub (`prj_ijMCD6lX6svfVk5tnovM97TNnrUz`, team `lautaro1393s-projects`). **Pendiente del user:** configurar env vars `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en Vercel Dashboard (Settings → Environment Variables) y verificar que dispare el primer deploy.
 - **MCPs configurados** en `opencode.json` per-project: Supabase (database+docs, project_ref `crjtucqucgxiqcnhpmgs`) y Vercel (remoto OAuth). El MCP de Vercel no lista el proyecto nuevo aún (bug de cache — necesita time o reauth).
@@ -116,7 +117,8 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
 - [x] **Fase 2** — Auth refinada (errores Supabase mapeados) + Proxy (era Middleware, renombrado en Next 16) + Layout (sidebar + header renderizado) + Dashboard Server Component con stats reales desde Supabase.
 - [x] **Fase 3** — Kanban board: 5 columnas por estado, server component fetch con joins (orden + equipo + cliente), drag & drop con `@dnd-kit/core` (PointerSensor + DndContext + DragOverlay), tarjetas con semáforo, acciones rápidas (WhatsApp con mensaje por estado, ver detalle), server action `actualizarEstadoOrden` que crea entrada en `historial_estados`. Optimistic UI con rollback si falla.
 - [x] **Fase 4** — Formulario de ingreso (parcial): zod schemas, server action `crearOrden`, página `/ordenes/nueva`, `OrdenForm` + `ClienteAutocomplete` mobile-first, links en Dashboard y Kanban. **Falta:** 4.3 scanner QR, 4.4 upload fotos (requiere definir Supabase Storage bucket primero).
-- [ ] **Fase 5** — Detalle de orden: timeline, notas y fotos al historial, editar presupuesto, cambio de estado rápido.
+- [x] **Fase 7** — Control de tiempo y viabilidad: schema `app_settings` + `tiempo_sesiones`, server actions (start/pause/resume/stop + cerrar huérfana + editar nota), página `/settings` con tarifa horaria configurable, `TemporizadorCard` en `/ordenes/[id]` con timer en vivo + costo a tarifa + margen vs presupuesto + lista de sesiones con notas editables, indicador global en sidebar (chip rojo con OT activa), auto-prompt en Kanban al pasar a `esperando_repuesto`, auto-stop al pasar a `entregado` o `cancelado`. Migración SQL en `supabase/migrations/2026-09-06-tiempo-control.sql` (pendiente de aplicar en Supabase).
+- [ ] **Fase 5** — Detalle de orden: ya tiene la base de la Fase 7; faltan notas y fotos al historial, editar presupuesto, cambio de estado rápido desde detalle.
 - [ ] **Fase 6** — Portal de tracking público: ruta `/tracking/[token]`, vista simplificada para cliente, QR de acceso.
 
 ## 6. Gotchas críticos
@@ -146,7 +148,8 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
    - `NEXT_PUBLIC_SUPABASE_URL` (target: Production + Preview + Development)
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (idem)
 2. Verificar que dispare el primer deploy (debería ser automático al pushear a main). Si falla, abrir el build log y pegar acá.
-3. **Bug pre-existente** detectado pero NO arreglado: el sidebar fixed de 256px se superpone al contenido en mobile (390px). Es del `(dashboard)/layout.tsx` de Fase 1.2. Fix mínimo: `pl-0 md:pl-64` en el `<main>`. Fix ideal: sidebar off-canvas con hamburger en mobile.
+3. **Aplicar migración SQL de Fase 7** en Supabase Dashboard → SQL Editor → New query → pegar el contenido de `supabase/migrations/2026-09-06-tiempo-control.sql` → Run. Crea las tablas `app_settings`, `tiempo_sesiones`, agrega `ordenes.tiempo_total_seg`, trigger de mantenimiento, y RLS.
+4. **Bug pre-existente** detectado pero NO arreglado: el sidebar fixed de 256px se superpone al contenido en mobile (390px). Es del `(dashboard)/layout.tsx` de Fase 1.2. Fix mínimo: `pl-0 md:pl-64` en el `<main>`. Fix ideal: sidebar off-canvas con hamburger en mobile.
 
 ### Corto plazo (Fase 4 — completar)
 1. Definir Supabase Storage: crear bucket `fotos` (público, con policy de upload autenticado).

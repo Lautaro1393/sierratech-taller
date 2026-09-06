@@ -13,7 +13,9 @@ import {
 import { ESTADO_LABELS, type EstadoOrden, type OrdenConRelaciones } from "@/types";
 import { KanbanColumn } from "./kanban-column";
 import { KanbanCard } from "./kanban-card";
+import { PausePrompt } from "./pause-prompt";
 import { actualizarEstadoOrden } from "@/app/actions/ordenes";
+import { getSesionActivaPorOrdenClient } from "@/app/actions/tiempo";
 
 const COLUMN_ORDER: EstadoOrden[] = [
   "ingresado",
@@ -23,19 +25,35 @@ const COLUMN_ORDER: EstadoOrden[] = [
   "listo_para_retiro",
 ];
 
+interface PausePromptState {
+  ordenId: string;
+  sesionId: string | null;
+  numeroOt: number;
+}
+
 interface KanbanBoardProps {
   ordenes: OrdenConRelaciones[];
 }
 
 export function KanbanBoard({ ordenes }: KanbanBoardProps) {
-  const [items, setItems] = useState(ordenes);
+  // Overrides locales (optimistic updates). Cuando llegan nuevas props del server
+  // component, hacemos merge manteniendo los overrides activos.
+  const [overrides, setOverrides] = useState<Record<string, { estado: EstadoOrden }>>({});
   const [activeId, setActiveId] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
+  const [pausePrompt, setPausePrompt] = useState<PausePromptState | null>(null);
 
   const sensors = useSensors(
     useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
   );
+
+  const items = useMemo(() => {
+    return ordenes.map((o) => {
+      const ov = overrides[o.id];
+      return ov ? { ...o, estado: ov.estado } : o;
+    });
+  }, [ordenes, overrides]);
 
   const ordenesPorEstado = useMemo(() => {
     const map = Object.fromEntries(
@@ -69,25 +87,48 @@ export function KanbanBoard({ ordenes }: KanbanBoardProps) {
     if (!orden || orden.estado === targetEstado) return;
 
     const estadoAnterior = orden.estado;
-    setItems((prev) =>
-      prev.map((o) => (o.id === ordenId ? { ...o, estado: targetEstado } : o))
-    );
+    setOverrides((prev) => ({ ...prev, [ordenId]: { estado: targetEstado } }));
 
     startTransition(async () => {
       const result = await actualizarEstadoOrden(ordenId, targetEstado);
       if (!result.ok) {
-        setItems((prev) =>
-          prev.map((o) =>
-            o.id === ordenId ? { ...o, estado: estadoAnterior } : o
-          )
-        );
+        setOverrides((prev) => {
+          const next = { ...prev };
+          next[ordenId] = { estado: estadoAnterior };
+          return next;
+        });
         setError(result.error ?? "No se pudo actualizar el estado");
+        return;
+      }
+      // Limpiar override: las props ya vienen con el nuevo estado.
+      setOverrides((prev) => {
+        const next = { ...prev };
+        delete next[ordenId];
+        return next;
+      });
+      if (result.pausaSugerida) {
+        const sesion = await getSesionActivaPorOrdenClient(ordenId);
+        if (sesion) {
+          setPausePrompt({
+            ordenId,
+            sesionId: sesion.id,
+            numeroOt: orden.numero_ot,
+          });
+        }
       }
     });
   }
 
   return (
     <>
+      {pausePrompt && (
+        <PausePrompt
+          sesionId={pausePrompt.sesionId}
+          numeroOt={pausePrompt.numeroOt}
+          onDismiss={() => setPausePrompt(null)}
+        />
+      )}
+
       {error && (
         <div className="glass-card p-3 text-sm text-status-red border-status-red/30">
           {error}

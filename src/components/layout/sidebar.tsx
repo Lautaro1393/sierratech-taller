@@ -3,6 +3,8 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { TimerIndicator } from "./timer-indicator";
+import type { SesionActivaGlobal } from "@/types";
 
 const navItems = [
   {
@@ -43,7 +45,11 @@ const navItems = [
   },
 ];
 
-export function Sidebar() {
+interface SidebarProps {
+  sesionActiva: SesionActivaGlobal | null;
+}
+
+export function Sidebar({ sesionActiva }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
 
@@ -103,22 +109,73 @@ export function Sidebar() {
           })}
         </nav>
 
-        <div className="p-4 border-t border-white/5">
-          <Link
-            href="/logout"
-            className={`
-              flex items-center gap-3 px-3 py-2.5 rounded-lg
-              text-ink-muted hover:bg-surface-hover hover:text-status-red
-              transition-all duration-200
-              ${collapsed ? "justify-center" : ""}
-            `}
-            title={collapsed ? "Cerrar sesión" : undefined}
-          >
-            <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
-            </svg>
-            {!collapsed && <span className="font-medium">Cerrar sesión</span>}
-          </Link>
+        <div className="border-t border-white/5">
+          {!collapsed && <TimerIndicator sesionActiva={sesionActiva} />}
+          {collapsed && sesionActiva && (
+            <div className="p-2">
+              <Link
+                href={`/ordenes/${sesionActiva.orden.id}`}
+                className="block w-10 h-10 rounded-lg bg-status-red/15 border border-status-red/30 flex items-center justify-center mx-auto"
+                title={`Trabajando en OT-${sesionActiva.orden.numero_ot.toString().padStart(4, "0")}`}
+              >
+                <span className="relative flex h-2 w-2">
+                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-red opacity-75" />
+                  <span className="relative inline-flex rounded-full h-2 w-2 bg-status-red" />
+                </span>
+              </Link>
+            </div>
+          )}
+          <div className="p-4 space-y-1">
+            <Link
+              href="/settings"
+              className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-lg
+                transition-all duration-200
+                ${pathname === "/settings"
+                  ? "bg-accent/10 text-accent border border-accent/20"
+                  : "text-ink-secondary hover:bg-surface-hover hover:text-ink-primary"
+                }
+                ${collapsed ? "justify-center" : ""}
+              `}
+              title={collapsed ? "Configuración" : undefined}
+            >
+              <svg
+                className="w-5 h-5"
+                fill="none"
+                viewBox="0 0 24 24"
+                stroke="currentColor"
+              >
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M10.325 4.317c.426-1.756 2.924-1.756 3.35 0a1.724 1.724 0 002.573 1.066c1.543-.94 3.31.826 2.37 2.37a1.724 1.724 0 001.065 2.572c1.756.426 1.756 2.924 0 3.35a1.724 1.724 0 00-1.066 2.573c.94 1.543-.826 3.31-2.37 2.37a1.724 1.724 0 00-2.572 1.065c-.426 1.756-2.924 1.756-3.35 0a1.724 1.724 0 00-2.573-1.066c-1.543.94-3.31-.826-2.37-2.37a1.724 1.724 0 00-1.065-2.572c-1.756-.426-1.756-2.924 0-3.35a1.724 1.724 0 001.066-2.573c-.94-1.543.826-3.31 2.37-2.37.996.608 2.296.07 2.572-1.065z"
+                />
+                <path
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  strokeWidth={2}
+                  d="M15 12a3 3 0 11-6 0 3 3 0 016 0z"
+                />
+              </svg>
+              {!collapsed && <span className="font-medium">Configuración</span>}
+            </Link>
+            <Link
+              href="/logout"
+              className={`
+                flex items-center gap-3 px-3 py-2.5 rounded-lg
+                text-ink-muted hover:bg-surface-hover hover:text-status-red
+                transition-all duration-200
+                ${collapsed ? "justify-center" : ""}
+              `}
+              title={collapsed ? "Cerrar sesión" : undefined}
+            >
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 16l4-4m0 0l-4-4m4 4H7m6 4v1a3 3 0 01-3 3H6a3 3 0 01-3-3V7a3 3 0 013-3h4a3 3 0 013 3v1" />
+              </svg>
+              {!collapsed && <span className="font-medium">Cerrar sesión</span>}
+            </Link>
+          </div>
         </div>
       </div>
     </aside>

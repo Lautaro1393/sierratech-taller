@@ -55,9 +55,30 @@ export interface HistorialEstado {
   created_at: string;
 }
 
+export interface TiempoSesion {
+  id: string;
+  orden_id: string;
+  started_at: string;
+  ended_at: string | null;
+  duracion_seg: number | null;
+  notas: string | null;
+  creado_por: string | null;
+  created_at: string;
+}
+
 export interface OrdenConRelaciones extends Orden {
   equipo: Equipo & { cliente: Cliente };
   historial: HistorialEstado[];
+  tiempo_total_seg: number;
+  sesion_activa?: TiempoSesion | null;
+}
+
+export interface SesionActivaGlobal {
+  sesion: TiempoSesion;
+  orden: Pick<Orden, "id" | "numero_ot">;
+  equipo: Pick<Equipo, "id" | "marca" | "modelo"> & {
+    cliente: Pick<Cliente, "id" | "nombre">;
+  };
 }
 
 export const ESTADO_ORDER: EstadoOrden[] = [

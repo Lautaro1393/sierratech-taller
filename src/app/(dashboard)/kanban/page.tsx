@@ -19,6 +19,7 @@ export default async function KanbanPage() {
     .select(
       `
       *,
+      tiempo_total_seg,
       equipo:equipos (
         *,
         cliente:clientes (*)

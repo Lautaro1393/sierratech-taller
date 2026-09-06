@@ -84,6 +84,21 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 6. `entregado` - Entregado al cliente
 7. `cancelado` - Orden cancelada
 
+### Tablas de Tiempo (Fase 7)
+
+| Tabla | Descripción |
+|-------|-------------|
+| `app_settings` | Key/value para config global (ej: `tarifa_horaria_ars`) |
+| `tiempo_sesiones` | Una fila por start/pause (FK a `ordenes`, `duracion_seg` calculado) |
+| `ordenes.tiempo_total_seg` | Campo acumulativo actualizado por trigger (suma de duraciones cerradas) |
+
+**Reglas de negocio:**
+- Solo una sesión activa por orden (validado en server action).
+- Timer bloqueado en `entregado` / `cancelado`.
+- Auto-stop al pasar a `entregado` o `cancelado`.
+- Auto-prompt al pasar a `esperando_repuesto` (pausar si querés).
+- Sesiones huérfanas (>24h sin cerrar) ofrecen cierre forzado.
+
 ---
 
 ## 4. Design System
@@ -145,6 +160,21 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 - [ ] 6.1 Ruta pública `/tracking/[token]`
 - [ ] 6.2 Vista simplificada para cliente
 - [ ] 6.3 QR de acceso
+
+### Fase 7: Control de Tiempo y Viabilidad ✅
+- [x] 7.1 Schema: `app_settings` + `tiempo_sesiones` + `ordenes.tiempo_total_seg` + trigger
+- [x] 7.2 Server actions: start/pause/resume/stop + editar notas + cerrar huérfana
+- [x] 7.3 Settings: tarifa horaria configurable en `/settings`
+- [x] 7.4 `TemporizadorCard` en `/ordenes/[id]` con timer en vivo, costo y margen
+- [x] 7.5 Indicador global en sidebar (chip rojo con OT activa)
+- [x] 7.6 Auto-prompt al mover a `esperando_repuesto`
+- [x] 7.7 Auto-stop al cerrar orden (`entregado` / `cancelado`)
+
+#### Out of scope (Fase 8+)
+- Reportes de profitability por tipo de equipo / falla
+- Histórico comparativo "tiempo promedio por tipo"
+- Export CSV
+- Multi-usuario con atribución por sesión (campo `creado_por` ya existe)
 
 ---
 

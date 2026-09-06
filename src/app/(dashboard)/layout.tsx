@@ -1,31 +1,18 @@
-"use client";
+import { AuthProvider } from "@/components/auth-provider";
+import { DashboardShell } from "@/components/layout/dashboard-shell";
+import { getSesionActivaGlobal } from "@/lib/queries/tiempo";
 
-import { useAuth } from "@/components/auth-provider";
-import { Header, Sidebar } from "@/components/layout";
-
-export default function DashboardLayout({ children }: { children: React.ReactNode }) {
-  const { loading } = useAuth();
-
-  if (loading) {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-surface-base">
-        <div className="text-center space-y-4">
-          <div className="animate-spin w-10 h-10 border-2 border-accent border-t-transparent rounded-full mx-auto" />
-          <p className="text-ink-secondary">Cargando...</p>
-        </div>
-      </div>
-    );
-  }
-
+export default async function DashboardLayout({
+  children,
+}: {
+  children: React.ReactNode;
+}) {
+  const sesionActiva = await getSesionActivaGlobal();
   return (
-    <div className="min-h-screen bg-surface-base">
-      <Sidebar />
-      <main className="pl-64 min-h-screen">
-        <Header />
-        <div className="p-6">
-          {children}
-        </div>
-      </main>
-    </div>
+    <AuthProvider>
+      <DashboardShell sesionActiva={sesionActiva}>
+        {children}
+      </DashboardShell>
+    </AuthProvider>
   );
 }
