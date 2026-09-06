@@ -34,7 +34,14 @@ export async function getSesionActivaGlobal(): Promise<SesionActivaGlobal | null
     .from("tiempo_sesiones")
     .select(
       `
-      *,
+      id,
+      orden_id,
+      started_at,
+      ended_at,
+      duracion_seg,
+      notas,
+      creado_por,
+      created_at,
       orden:ordenes (
         id,
         numero_ot,
@@ -54,7 +61,32 @@ export async function getSesionActivaGlobal(): Promise<SesionActivaGlobal | null
     .order("started_at", { ascending: false })
     .limit(1)
     .maybeSingle();
-  return (data as unknown as SesionActivaGlobal | null) ?? null;
+
+  if (!data) return null;
+  const row = data as unknown as Omit<SesionActivaGlobal, "sesion"> & {
+    id: string;
+    orden_id: string;
+    started_at: string;
+    ended_at: string | null;
+    duracion_seg: number | null;
+    notas: string | null;
+    creado_por: string | null;
+    created_at: string;
+    orden: SesionActivaGlobal["orden"];
+  };
+  return {
+    sesion: {
+      id: row.id,
+      orden_id: row.orden_id,
+      started_at: row.started_at,
+      ended_at: row.ended_at,
+      duracion_seg: row.duracion_seg,
+      notas: row.notas,
+      creado_por: row.creado_por,
+      created_at: row.created_at,
+    },
+    orden: row.orden,
+  };
 }
 
 /**

@@ -46,7 +46,7 @@ export function TimerIndicator({ sesionActiva }: TimerIndicatorProps) {
         {formatCorto(elapsed)}
       </p>
       <p className="text-[10px] text-ink-muted truncate mt-1">
-        {sesionActiva.equipo.cliente.nombre}
+        {sesionActiva.orden.equipo.cliente.nombre}
       </p>
     </Link>
   );

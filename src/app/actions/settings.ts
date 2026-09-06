@@ -38,7 +38,7 @@ export async function actualizarTarifaHoraria(
   const { error } = await supabase
     .from("app_settings")
     .update({
-      value: JSON.stringify(parsed.data),
+      value: parsed.data,
       updated_at: new Date().toISOString(),
     })
     .eq("key", TARIFA_KEY);

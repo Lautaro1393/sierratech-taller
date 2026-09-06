@@ -36,7 +36,7 @@ export function SettingsForm({ initialTarifa }: SettingsFormProps) {
       <Input
         label="Tarifa horaria objetivo (ARS / hora)"
         type="number"
-        step="100"
+        step="any"
         min="1"
         value={tarifa}
         onChange={(e) => setTarifa(Number(e.target.value))}
