@@ -161,10 +161,11 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 #### Pendientes para Fase 5+
 - Fotos en historial (requiere Supabase Storage bucket)
 
-### Fase 6: Portal de Tracking
-- [ ] 6.1 Ruta pública `/tracking/[token]`
-- [ ] 6.2 Vista simplificada para cliente
-- [ ] 6.3 QR de acceso
+### Fase 6: Portal de Tracking ✅
+- [x] 6.1 Ruta pública `/tracking/[token]` (excluida del proxy de auth)
+- [x] 6.2 Vista simplificada para cliente (header, estado actual con copy amigable, timeline de progreso, mensajes del taller separados por estado, detalle del equipo, link WhatsApp)
+- [x] 6.3 Link compartible + botón "Copiar" en /ordenes/[id] (QR como mejora futura si hace falta)
+- [x] Funciones SECURITY DEFINER (`get_orden_publica_by_token`, `get_historial_publico_by_orden`) — bypasean el bug del RLS policy original con `current_setting('request.jwt.claims')` y solo exponen columnas no-sensibles (sin costos, tiempos ni notas internas)
 
 ### Fase 7: Control de Tiempo y Viabilidad ✅
 - [x] 7.1 Schema: `app_settings` + `tiempo_sesiones` + `ordenes.tiempo_total_seg` + trigger
