@@ -150,11 +150,16 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 - [ ] 4.3 Scanner QR de série
 - [ ] 4.4 Upload de fotos con compresión
 
-### Fase 5: Detalle de Orden
-- [ ] 5.1 Vista detalle con timeline
-- [ ] 5.2 Agregar notas y fotos al historial
-- [ ] 5.3 Editar presupuesto
-- [ ] 5.4 Cambio de estado rápido
+### Fase 5: Detalle de Orden ✅
+- [x] 5.1 Vista detalle con timeline (ya estaba la base)
+- [x] 5.2 Agregar notas y fotos al historial — notas sí, fotos pendientes (requiere Storage)
+- [x] 5.3 Editar presupuesto — total + repuestos + tipo intervención + aprobado
+- [x] 5.4 Cambio de estado rápido — chips clickeables, con confirmación para estados finales
+- [x] 5.5 Resumen de cierre automático — banner con costo/ganancia/margen cuando estado = entregado/cancelado
+- [x] 5.6 Auto-stop de timer al cerrar orden (validado E2E)
+
+#### Pendientes para Fase 5+
+- Fotos en historial (requiere Supabase Storage bucket)
 
 ### Fase 6: Portal de Tracking
 - [ ] 6.1 Ruta pública `/tracking/[token]`

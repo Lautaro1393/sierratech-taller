@@ -2,6 +2,7 @@
 
 import { revalidatePath } from "next/cache";
 import { redirect } from "next/navigation";
+import { z } from "zod";
 import { createServerClient } from "@/lib/supabase";
 import type { EstadoOrden } from "@/types";
 import { ordenFormSchema, type OrdenFormInput } from "@/lib/validations/orden";
@@ -168,4 +169,119 @@ export async function crearOrdenYRedirigir(
     redirect(`/ordenes/${result.ordenId}`);
   }
   return result;
+}
+
+const presupuestoSchema = z.object({
+  presupuesto: z.number().min(0, "Debe ser ≥ 0"),
+  costoRepuestosArs: z.number().min(0, "Debe ser ≥ 0"),
+  tipoIntervencion: z.enum(["estandar", "microscopio"]),
+  presupuestoAprobado: z.boolean(),
+});
+
+type ActionResult<T = void> =
+  | { ok: true; data?: T }
+  | { ok: false; error: string };
+
+export async function actualizarPresupuestoOrden(
+  ordenId: string,
+  input: z.infer<typeof presupuestoSchema>
+): Promise<ActionResult> {
+  const parsed = presupuestoSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
+  }
+
+  const supabase = await createServerClient();
+  const { data: ordenActual, error: fetchError } = await supabase
+    .from("ordenes")
+    .select("estado")
+    .eq("id", ordenId)
+    .single();
+
+  if (fetchError || !ordenActual) {
+    return { ok: false, error: "Orden no encontrada" };
+  }
+
+  const { error } = await supabase
+    .from("ordenes")
+    .update({
+      presupuesto: parsed.data.presupuesto,
+      costo_repuestos_ars: parsed.data.costoRepuestosArs,
+      tipo_intervencion: parsed.data.tipoIntervencion,
+      presupuesto_aprobado: parsed.data.presupuestoAprobado,
+    })
+    .eq("id", ordenId);
+
+  if (error) return { ok: false, error: error.message };
+
+  await supabase.from("historial_estados").insert({
+    orden_id: ordenId,
+    estado_anterior: ordenActual.estado,
+    estado_nuevo: ordenActual.estado,
+    nota_interna: `Presupuesto actualizado a $${parsed.data.presupuesto} (${parsed.data.tipoIntervencion}, repuestos $${parsed.data.costoRepuestosArs})${parsed.data.presupuestoAprobado ? " — aprobado" : ""}`,
+    nota_cliente: null,
+    fotos_urls: null,
+  });
+
+  revalidatePath(`/ordenes/${ordenId}`);
+  revalidatePath("/kanban");
+  revalidatePath("/", "layout");
+  return { ok: true };
+}
+
+const notaSchema = z.object({
+  nota_interna: z.string().trim().max(2000).optional().nullable(),
+  nota_cliente: z.string().trim().max(2000).optional().nullable(),
+});
+
+export async function agregarNotaHistorial(
+  ordenId: string,
+  input: { nota_interna?: string | null; nota_cliente?: string | null }
+): Promise<ActionResult<{ historialId: string }>> {
+  const parsed = notaSchema.safeParse(input);
+  if (!parsed.success) {
+    return {
+      ok: false,
+      error: parsed.error.issues[0]?.message ?? "Datos inválidos",
+    };
+  }
+
+  const interna = parsed.data.nota_interna?.trim();
+  const cliente = parsed.data.nota_cliente?.trim();
+
+  if (!interna && !cliente) {
+    return { ok: false, error: "Escribí al menos una nota (interna o para cliente)" };
+  }
+
+  const supabase = await createServerClient();
+  const { data: ordenActual, error: fetchError } = await supabase
+    .from("ordenes")
+    .select("estado")
+    .eq("id", ordenId)
+    .single();
+
+  if (fetchError || !ordenActual) {
+    return { ok: false, error: "Orden no encontrada" };
+  }
+
+  const { data, error } = await supabase
+    .from("historial_estados")
+    .insert({
+      orden_id: ordenId,
+      estado_anterior: ordenActual.estado,
+      estado_nuevo: ordenActual.estado,
+      nota_interna: interna || null,
+      nota_cliente: cliente || null,
+      fotos_urls: null,
+    })
+    .select("id")
+    .single();
+
+  if (error || !data) return { ok: false, error: error?.message ?? "Error al guardar" };
+
+  revalidatePath(`/ordenes/${ordenId}`);
+  return { ok: true, data: { historialId: data.id } };
 }
