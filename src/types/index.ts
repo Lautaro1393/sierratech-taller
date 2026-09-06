@@ -1,4 +1,4 @@
-export type EstadoOrden = 
+export type EstadoOrden =
   | "ingresado"
   | "en_diagnostico"
   | "esperando_repuesto"
@@ -6,6 +6,31 @@ export type EstadoOrden =
   | "listo_para_retiro"
   | "entregado"
   | "cancelado";
+
+export type TipoIntervencion = "estandar" | "microscopio";
+
+export type ViabilityStatus = "OPTIMA" | "RIESGO_MARGEN" | "DEFICITARIA";
+
+export interface ViabilityConfig {
+  costoHoraPisoArs: number;
+  tarifaHoraEstandarArs: number;
+  tarifaHoraMicroArs: number;
+  umbralAmarilloPct: number;
+  umbralRojoPct: number;
+}
+
+export interface ViabilityResult {
+  horasConsumidas: number;
+  horasConsumidasFormateadas: string;
+  presupuestoMOArs: number;
+  costoOperativoAcumuladoArs: number;
+  tarifaCobradaHoraArs: number;
+  gananciaNetaMOArs: number;
+  margenPorcentaje: number;
+  horasRestantesRentables: number;
+  status: ViabilityStatus;
+  accionRecomendada: string;
+}
 
 export interface Cliente {
   id: string;
@@ -42,6 +67,9 @@ export interface Orden {
   fecha_promesa: string | null;
   fecha_entrega: string | null;
   updated_at: string;
+  tiempo_total_seg: number;
+  costo_repuestos_ars: number;
+  tipo_intervencion: TipoIntervencion;
 }
 
 export interface HistorialEstado {
@@ -69,15 +97,15 @@ export interface TiempoSesion {
 export interface OrdenConRelaciones extends Orden {
   equipo: Equipo & { cliente: Cliente };
   historial: HistorialEstado[];
-  tiempo_total_seg: number;
   sesion_activa?: TiempoSesion | null;
 }
 
 export interface SesionActivaGlobal {
   sesion: TiempoSesion;
-  orden: Pick<Orden, "id" | "numero_ot">;
-  equipo: Pick<Equipo, "id" | "marca" | "modelo"> & {
-    cliente: Pick<Cliente, "id" | "nombre">;
+  orden: Pick<Orden, "id" | "numero_ot"> & {
+    equipo: Pick<Equipo, "id" | "marca" | "modelo"> & {
+      cliente: Pick<Cliente, "id" | "nombre">;
+    };
   };
 }
 

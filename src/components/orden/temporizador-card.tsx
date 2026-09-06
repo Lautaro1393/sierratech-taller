@@ -5,33 +5,37 @@ import { Play, Pause, Square, Pencil, Check, X, AlertTriangle } from "lucide-rea
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Button } from "@/components/ui/button";
 import {
-  formatHMS,
-  formatCorto,
   formatTiempoHumano,
-  formatCurrency,
   formatFechaHora,
-  tiempoEfectivoSeg,
-  calcularCosto,
-  calcularMargen,
-  getSemforoMargen,
-  type SemforoMargen,
+  formatCurrency,
 } from "@/lib/utils";
+import {
+  calcularViabilidadOrden,
+  statusBadgeStyles,
+  type ViabilityInput,
+} from "@/lib/pricing/viability";
 import {
   iniciarSesion,
   pausarSesion,
   editarNotaSesion,
   cerrarSesionHuerfana,
 } from "@/app/actions/tiempo";
-import type { EstadoOrden, TiempoSesion } from "@/types";
+import type {
+  EstadoOrden,
+  TiempoSesion,
+  ViabilityConfig,
+} from "@/types";
 
 interface TemporizadorCardProps {
   ordenId: string;
   estado: EstadoOrden;
   presupuesto: number;
-  tarifaHora: number;
+  costoRepuestosArs: number;
+  tipoIntervencion: "estandar" | "microscopio";
   tiempoTotalSeg: number;
   sesiones: TiempoSesion[];
   sesionActiva: TiempoSesion | null;
+  config: ViabilityConfig;
 }
 
 const ESTADOS_BLOQUEADOS: EstadoOrden[] = ["entregado", "cancelado"];
@@ -41,10 +45,12 @@ export function TemporizadorCard({
   ordenId,
   estado,
   presupuesto,
-  tarifaHora,
+  costoRepuestosArs,
+  tipoIntervencion,
   tiempoTotalSeg,
   sesiones,
   sesionActiva: initialSesionActiva,
+  config,
 }: TemporizadorCardProps) {
   const [sesionActiva, setSesionActiva] = useState<TiempoSesion | null>(
     initialSesionActiva
@@ -53,24 +59,31 @@ export function TemporizadorCard({
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
 
-  // Tick de reloj: cada 1s mientras hay sesión activa
   useEffect(() => {
     if (!sesionActiva) return;
     const interval = setInterval(() => setNow(new Date()), 1000);
     return () => clearInterval(interval);
   }, [sesionActiva]);
 
-  // Detectar sesión huérfana (>24h sin cerrar)
   const sesionHuerfana =
     sesionActiva &&
     (now.getTime() - new Date(sesionActiva.started_at).getTime()) /
       3_600_000 >
       HORAS_SESION_HUERFANA;
 
-  const tiempoEfectivo = tiempoEfectivoSeg(tiempoTotalSeg, sesionActiva, now);
-  const costo = calcularCosto(tiempoEfectivo, tarifaHora);
-  const margen = calcularMargen(presupuesto, costo);
-  const semaforoMargen: SemforoMargen = getSemforoMargen(margen);
+  const tiempoEfectivo = sesionActiva
+    ? tiempoTotalSeg +
+      Math.floor((now.getTime() - new Date(sesionActiva.started_at).getTime()) / 1000)
+    : tiempoTotalSeg;
+
+  const viabilityInput: ViabilityInput = {
+    tiempoTotalSeg: tiempoEfectivo,
+    presupuestoTotalArs: presupuesto,
+    costoRepuestosArs,
+    tipoIntervencion,
+  };
+  const viabilidad = calcularViabilidadOrden(viabilityInput, config);
+  const badge = statusBadgeStyles(viabilidad.status);
 
   const bloqueado = ESTADOS_BLOQUEADOS.includes(estado);
 
@@ -82,9 +95,6 @@ export function TemporizadorCard({
         setError(result.error);
         return;
       }
-      // Refrescar via revalidatePath → la página se re-renderiza y nos llega
-      // la nueva sesión activa por props. Pero como estamos en client, hacemos
-      // un reload manual:
       window.location.reload();
     });
   }
@@ -111,7 +121,7 @@ export function TemporizadorCard({
     startTransition(async () => {
       const result = await cerrarSesionHuerfana(
         sesionId,
-        "Sesión olvidada abierta por más de 24h"
+        "Sesión abierta más de 24h"
       );
       if (!result.ok) {
         setError(result.error);
@@ -127,21 +137,29 @@ export function TemporizadorCard({
   return (
     <Card>
       <CardHeader>
-        <CardTitle className="flex items-center gap-2">
-          <svg
-            className="w-5 h-5 text-accent"
-            fill="none"
-            viewBox="0 0 24 24"
-            stroke="currentColor"
+        <CardTitle className="flex items-center justify-between gap-2">
+          <span className="flex items-center gap-2">
+            <svg
+              className="w-5 h-5 text-accent"
+              fill="none"
+              viewBox="0 0 24 24"
+              stroke="currentColor"
+            >
+              <path
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                strokeWidth={2}
+                d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
+              />
+            </svg>
+            Tiempo de trabajo
+          </span>
+          <span
+            className={`text-xs font-medium px-2 py-1 rounded-full border ${badge.bg} ${badge.text}`}
+            title={viabilidad.accionRecomendada}
           >
-            <path
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              strokeWidth={2}
-              d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"
-            />
-          </svg>
-          Tiempo de trabajo
+            {badge.label}
+          </span>
         </CardTitle>
       </CardHeader>
       <CardContent className="space-y-4">
@@ -183,54 +201,63 @@ export function TemporizadorCard({
                 sesionActiva ? "text-accent" : "text-ink-primary"
               }`}
             >
-              {sesionActiva ? formatCorto(tiempoEfectivo) : formatHMS(tiempoEfectivo)}
+              {viabilidad.horasConsumidasFormateadas}
             </p>
-            {sesionActiva && (
-              <p className="text-xs text-status-green mt-2 flex items-center gap-1.5">
-                <span className="relative flex h-2 w-2">
-                  <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-green opacity-75" />
-                  <span className="relative inline-flex rounded-full h-2 w-2 bg-status-green" />
-                </span>
-                Corriendo
-              </p>
-            )}
-          </div>
-
-          <div className="flex flex-col gap-3 p-4 rounded-xl bg-surface-base/50 border border-white/5">
-            <div className="flex justify-between text-sm">
-              <span className="text-ink-muted">Costo @{formatCurrency(tarifaHora)}/h</span>
-              <span className="font-mono text-ink-primary tabular-nums">
-                {formatCurrency(costo)}
-              </span>
-            </div>
-            <div className="flex justify-between text-sm">
-              <span className="text-ink-muted">Presupuesto</span>
-              <span className="font-mono text-ink-primary tabular-nums">
-                {presupuesto > 0 ? formatCurrency(presupuesto) : "—"}
-              </span>
-            </div>
-            <div className="h-px bg-white/5 my-1" />
-            <div className="flex justify-between items-center text-sm">
-              <span className="text-ink-muted">Margen</span>
-              {presupuesto > 0 ? (
-                <span
-                  className={`font-mono font-semibold tabular-nums ${
-                    semaforoMargen === "green"
-                      ? "text-status-green"
-                      : semaforoMargen === "yellow"
-                        ? "text-status-yellow"
-                        : "text-status-red"
-                  }`}
-                >
-                  {margen > 0 ? "+" : ""}
-                  {margen.toFixed(0)}%
+            <p className="text-xs text-ink-muted mt-2">
+              {sesionActiva ? (
+                <span className="flex items-center gap-1.5 text-status-green">
+                  <span className="relative flex h-2 w-2">
+                    <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-status-green opacity-75" />
+                    <span className="relative inline-flex rounded-full h-2 w-2 bg-status-green" />
+                  </span>
+                  Corriendo
                 </span>
               ) : (
-                <span className="text-ink-muted">Sin presupuesto</span>
+                "Detenido"
               )}
+            </p>
+          </div>
+
+          <div className="flex flex-col gap-2 p-4 rounded-xl bg-surface-base/50 border border-white/5 text-sm">
+            <Row label="Costo operativo (acumulado)" value={formatCurrency(viabilidad.costoOperativoAcumuladoArs)} />
+            <Row label="Presupuesto MO" value={formatCurrency(viabilidad.presupuestoMOArs)} />
+            <Row
+              label="Ganancia neta MO"
+              value={formatCurrency(viabilidad.gananciaNetaMOArs)}
+              className={viabilidad.gananciaNetaMOArs < 0 ? "text-status-red" : undefined}
+            />
+            <div className="h-px bg-white/5 my-1" />
+            <div className="flex justify-between items-center">
+              <span className="text-ink-muted">Margen MO</span>
+              <span
+                className={`font-mono font-semibold tabular-nums ${margenColor(viabilidad.margenPorcentaje)}`}
+              >
+                {viabilidad.margenPorcentaje > 0 ? "+" : ""}
+                {viabilidad.margenPorcentaje.toFixed(0)}%
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-ink-muted">Horas restantes rentables</span>
+              <span className="font-mono tabular-nums text-ink-primary">
+                {viabilidad.horasRestantesRentables.toFixed(2)}h
+              </span>
+            </div>
+            <div className="flex justify-between items-center text-xs">
+              <span className="text-ink-muted">
+                Tipo: {tipoIntervencion === "microscopio" ? "microscopio" : "estándar"}
+              </span>
+              <span className="font-mono tabular-nums text-ink-muted">
+                @{formatCurrency(viabilidad.tarifaCobradaHoraArs)}/h
+              </span>
             </div>
           </div>
         </div>
+
+        {!bloqueado && (
+          <p className="text-xs text-ink-muted italic border-l-2 border-white/10 pl-3">
+            {viabilidad.accionRecomendada}
+          </p>
+        )}
 
         <div className="flex flex-wrap gap-2">
           {!sesionActiva ? (
@@ -257,9 +284,7 @@ export function TemporizadorCard({
           )}
         </div>
 
-        {error && (
-          <p className="text-sm text-status-red">{error}</p>
-        )}
+        {error && <p className="text-sm text-status-red">{error}</p>}
 
         {sesionesCerradas.length > 0 && (
           <div className="space-y-2 pt-2 border-t border-white/5">
@@ -276,6 +301,21 @@ export function TemporizadorCard({
       </CardContent>
     </Card>
   );
+}
+
+function Row({ label, value, className = "" }: { label: string; value: string; className?: string }) {
+  return (
+    <div className="flex justify-between">
+      <span className="text-ink-muted">{label}</span>
+      <span className={`font-mono text-ink-primary tabular-nums ${className}`}>{value}</span>
+    </div>
+  );
+}
+
+function margenColor(margen: number): string {
+  if (margen > 30) return "text-status-green";
+  if (margen >= 0) return "text-status-yellow";
+  return "text-status-red";
 }
 
 function SesionRow({ sesion }: { sesion: TiempoSesion }) {

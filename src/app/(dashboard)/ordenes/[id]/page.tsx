@@ -12,7 +12,7 @@ import {
   formatFechaHora,
 } from "@/lib/utils";
 import { ESTADO_LABELS, type EstadoOrden, type HistorialEstado } from "@/types";
-import { obtenerTarifaHoraria } from "@/app/actions/settings";
+import { obtenerConfiguracionPricing } from "@/app/actions/settings";
 import {
   getSesionesPorOrden,
   getSesionActivaPorOrden,
@@ -31,7 +31,6 @@ export default async function OrdenDetallePage({
     .select(
       `
       *,
-      tiempo_total_seg,
       equipo:equipos (
         *,
         cliente:clientes (*)
@@ -43,10 +42,10 @@ export default async function OrdenDetallePage({
 
   if (!orden) notFound();
 
-  const [sesiones, sesionActiva, tarifaHora, historialRes] = await Promise.all([
+  const [sesiones, sesionActiva, config, historialRes] = await Promise.all([
     getSesionesPorOrden(id),
     getSesionActivaPorOrden(id),
-    obtenerTarifaHoraria(),
+    obtenerConfiguracionPricing(),
     supabase
       .from("historial_estados")
       .select("*")
@@ -96,10 +95,12 @@ export default async function OrdenDetallePage({
             ordenId={orden.id}
             estado={estado}
             presupuesto={orden.presupuesto ?? 0}
-            tarifaHora={tarifaHora}
+            costoRepuestosArs={orden.costo_repuestos_ars ?? 0}
+            tipoIntervencion={orden.tipo_intervencion ?? "estandar"}
             tiempoTotalSeg={orden.tiempo_total_seg ?? 0}
             sesiones={sesiones}
             sesionActiva={sesionActiva}
+            config={config}
           />
 
           <Card>
@@ -204,11 +205,32 @@ export default async function OrdenDetallePage({
             </CardHeader>
             <CardContent className="space-y-2 text-sm">
               <div className="flex justify-between">
-                <span className="text-ink-muted">Monto</span>
+                <span className="text-ink-muted">Tipo</span>
+                <span className="text-ink-primary">
+                  {orden.tipo_intervencion === "microscopio" ? "Microscopio" : "Estándar"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-muted">Repuestos</span>
+                <span className="font-mono text-ink-primary">
+                  {orden.costo_repuestos_ars > 0 ? formatCurrency(orden.costo_repuestos_ars) : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-muted">MO presupuestada</span>
+                <span className="font-mono text-ink-primary">
+                  {orden.presupuesto - (orden.costo_repuestos_ars ?? 0) > 0
+                    ? formatCurrency(orden.presupuesto - (orden.costo_repuestos_ars ?? 0))
+                    : "—"}
+                </span>
+              </div>
+              <div className="flex justify-between">
+                <span className="text-ink-muted">Total</span>
                 <span className="font-mono text-ink-primary">
                   {orden.presupuesto > 0 ? formatCurrency(orden.presupuesto) : "—"}
                 </span>
               </div>
+              <div className="h-px bg-white/5 my-1" />
               <div className="flex justify-between">
                 <span className="text-ink-muted">Aprobado</span>
                 <span className="text-ink-primary">
