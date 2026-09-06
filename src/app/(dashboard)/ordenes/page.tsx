@@ -3,9 +3,9 @@ import { ComingSoon } from "@/components/coming-soon";
 export default function OrdenesPage() {
   return (
     <ComingSoon
-      title="Órdenes"
-      description="Listado completo de órdenes con búsqueda y filtros."
-      fase="Fase 5"
+      title="Listado de órdenes"
+      description="Vista completa con búsqueda y filtros por estado, fecha y cliente."
+      fase="Fase 9"
     />
   );
 }

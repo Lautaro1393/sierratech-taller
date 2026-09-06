@@ -141,7 +141,7 @@ export function KanbanBoard({ ordenes }: KanbanBoardProps) {
         onDragEnd={handleDragEnd}
         onDragCancel={() => setActiveId(null)}
       >
-        <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0">
+        <div className="flex gap-4 overflow-x-auto pb-4 flex-1 min-h-0 snap-x snap-mandatory md:snap-none">
           {COLUMN_ORDER.map((estado) => (
             <KanbanColumn
               key={estado}

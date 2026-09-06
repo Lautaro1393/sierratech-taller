@@ -1,7 +1,9 @@
 "use client";
 
+import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
-import { Header, Sidebar } from "@/components/layout";
+import { Header } from "@/components/layout/header";
+import { Sidebar } from "@/components/layout/sidebar";
 import type { SesionActivaGlobal } from "@/types";
 
 interface DashboardShellProps {
@@ -11,6 +13,7 @@ interface DashboardShellProps {
 
 export function DashboardShell({ children, sesionActiva }: DashboardShellProps) {
   const { loading } = useAuth();
+  const [sidebarOpen, setSidebarOpen] = useState(false);
 
   if (loading) {
     return (
@@ -25,10 +28,14 @@ export function DashboardShell({ children, sesionActiva }: DashboardShellProps) 
 
   return (
     <div className="min-h-screen bg-surface-base">
-      <Sidebar sesionActiva={sesionActiva} />
-      <main className="pl-64 min-h-screen">
-        <Header />
-        <div className="p-6">
+      <Sidebar
+        sesionActiva={sesionActiva}
+        open={sidebarOpen}
+        onClose={() => setSidebarOpen(false)}
+      />
+      <main className="md:pl-64 min-h-screen">
+        <Header onMenuClick={() => setSidebarOpen(true)} />
+        <div className="p-4 md:p-6">
           {children}
         </div>
       </main>

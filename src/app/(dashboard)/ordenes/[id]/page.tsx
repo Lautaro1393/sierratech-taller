@@ -9,7 +9,7 @@ import { EstadoSelector } from "@/components/orden/estado-selector";
 import { PresupuestoEditor } from "@/components/orden/presupuesto-editor";
 import { ResumenCierre } from "@/components/orden/resumen-cierre";
 import { AgregarNotaHistorial } from "@/components/orden/agregar-nota-historial";
-import { CompartirTracking } from "@/components/orden/compartir-tracking";
+import { CompartirTrackingSection } from "@/components/orden/compartir-tracking-section";
 import {
   formatNumeroOt,
   formatFechaHora,
@@ -94,7 +94,7 @@ export default async function OrdenDetallePage({
         </Link>
       </div>
 
-      <CompartirTracking publicToken={orden.public_token} />
+      <CompartirTrackingSection publicToken={orden.public_token} />
 
       <Card>
         <CardContent className="pt-6">

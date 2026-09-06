@@ -46,7 +46,7 @@ export default async function KanbanPage() {
 
   return (
     <div className="space-y-4 h-full flex flex-col">
-      <div className="flex items-center justify-between">
+      <div className="flex flex-wrap items-center justify-between gap-3">
         <div>
           <h1 className="font-display text-2xl font-bold text-ink-primary">
             Kanban
