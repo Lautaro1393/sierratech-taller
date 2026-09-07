@@ -19,6 +19,11 @@ export const equipoSchema = z.object({
   tipo: z.enum(["notebook", "smartphone", "tablet", "monitor", "otro"], {
     message: "Seleccioná un tipo",
   }),
+  tipoCustom: z
+    .string()
+    .max(40, "Máximo 40 caracteres")
+    .optional()
+    .or(z.literal("")),
   marca: z.string().min(1, "Ingresá la marca").max(60),
   modelo: z.string().min(1, "Ingresá el modelo").max(80),
   numeroSerie: z.string().max(80).optional().or(z.literal("")),
@@ -41,6 +46,7 @@ export const ordenFormSchema = z.discriminatedUnion("clienteModo", [
     clienteModo: z.literal("existente"),
     clienteId: z.string().uuid("Seleccioná un cliente"),
     tipo: equipoSchema.shape.tipo,
+    tipoCustom: equipoSchema.shape.tipoCustom,
     marca: equipoSchema.shape.marca,
     modelo: equipoSchema.shape.modelo,
     numeroSerie: equipoSchema.shape.numeroSerie,
@@ -57,6 +63,7 @@ export const ordenFormSchema = z.discriminatedUnion("clienteModo", [
     telefono: clienteSchema.shape.telefono,
     email: clienteSchema.shape.email,
     tipo: equipoSchema.shape.tipo,
+    tipoCustom: equipoSchema.shape.tipoCustom,
     marca: equipoSchema.shape.marca,
     modelo: equipoSchema.shape.modelo,
     numeroSerie: equipoSchema.shape.numeroSerie,

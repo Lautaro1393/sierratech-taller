@@ -1,16 +1,20 @@
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase";
 import { OrdenForm } from "@/components/forms/orden-form";
+import { getMarcasModelosUnicos } from "@/lib/queries/equipos";
 import type { Cliente } from "@/types";
 
 export const dynamic = "force-dynamic";
 
 export default async function NuevaOrdenPage() {
   const supabase = await createServerClient();
-  const { data } = await supabase
-    .from("clientes")
-    .select("id, nombre, telefono, email")
-    .order("nombre", { ascending: true });
+  const [{ data }, marcasModelos] = await Promise.all([
+    supabase
+      .from("clientes")
+      .select("id, nombre, telefono, email")
+      .order("nombre", { ascending: true }),
+    getMarcasModelosUnicos(),
+  ]);
 
   const clientes: Pick<Cliente, "id" | "nombre" | "telefono" | "email">[] =
     data ?? [];
@@ -49,7 +53,12 @@ export default async function NuevaOrdenPage() {
         </p>
       </div>
 
-      <OrdenForm clientes={clientes} />
+      <OrdenForm
+        clientes={clientes}
+        marcas={marcasModelos.marcas}
+        modelos={marcasModelos.modelos}
+        tiposCustom={marcasModelos.tipos}
+      />
     </div>
   );
 }

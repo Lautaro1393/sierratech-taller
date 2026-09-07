@@ -111,11 +111,15 @@ export async function crearOrden(
     clienteId = data.clienteId;
   }
 
+  const tipoFinal = data.tipo === "otro" && data.tipoCustom?.trim()
+    ? data.tipoCustom.trim().toLowerCase()
+    : data.tipo;
+
   const { data: equipo, error: equipoError } = await supabase
     .from("equipos")
     .insert({
       cliente_id: clienteId,
-      tipo: data.tipo,
+      tipo: tipoFinal,
       marca: data.marca,
       modelo: data.modelo,
       numero_serie: data.numeroSerie || null,

@@ -4,23 +4,33 @@ import { useState, useTransition } from "react";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
+import { CurrencyInput } from "@/components/ui/currency-input";
+import { DateInput } from "@/components/ui/date-input";
 import { ClienteAutocomplete } from "./cliente-autocomplete";
+import { QrScannerButton } from "@/components/orden/scanner/qr-scanner-button";
 import { crearOrdenYRedirigir } from "@/app/actions/ordenes";
 import type { Cliente } from "@/types";
 
 interface OrdenFormProps {
   clientes: Pick<Cliente, "id" | "nombre" | "telefono" | "email">[];
+  marcas: string[];
+  modelos: string[];
+  tiposCustom: string[];
 }
 
-const TIPO_OPTIONS = [
+const TIPO_BASE = [
   { value: "notebook", label: "Notebook" },
   { value: "smartphone", label: "Smartphone" },
   { value: "tablet", label: "Tablet" },
   { value: "monitor", label: "Monitor" },
-  { value: "otro", label: "Otro" },
 ];
 
-export function OrdenForm({ clientes }: OrdenFormProps) {
+export function OrdenForm({
+  clientes,
+  marcas,
+  modelos,
+  tiposCustom,
+}: OrdenFormProps) {
   const [isPending, startTransition] = useTransition();
   const [error, setError] = useState<string | null>(null);
   const [fieldErrors, setFieldErrors] = useState<Record<string, string>>({});
@@ -29,6 +39,18 @@ export function OrdenForm({ clientes }: OrdenFormProps) {
     clientes.length > 0 ? "existente" : "nuevo"
   );
   const [clienteId, setClienteId] = useState<string>("");
+
+  const [tipo, setTipo] = useState<string>("");
+  const [tipoCustom, setTipoCustom] = useState<string>("");
+  const [marca, setMarca] = useState<string>("");
+  const [modelo, setModelo] = useState<string>("");
+  const [numeroSerie, setNumeroSerie] = useState<string>("");
+
+  const tipoOptions = [
+    ...TIPO_BASE,
+    ...tiposCustom.map((t) => ({ value: `otro:${t}`, label: `${t} (otro)` })),
+    { value: "otro", label: "+ Otro tipo" },
+  ];
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -39,20 +61,27 @@ export function OrdenForm({ clientes }: OrdenFormProps) {
 
     const fechaPromesa = (formData.get("fechaPromesa") as string) || "";
 
+    // Si el value es "otro:speaker", guardar el prefijo y usar tipoCustom
+    let tipoFinal: "notebook" | "smartphone" | "tablet" | "monitor" | "otro" =
+      "otro";
+    if (tipo.startsWith("otro:")) {
+      tipoFinal = "otro";
+    } else if (tipo === "otro") {
+      tipoFinal = "otro";
+    } else {
+      tipoFinal = tipo as typeof tipoFinal;
+    }
+
     const input =
       clienteModo === "existente"
         ? {
             clienteModo: "existente" as const,
             clienteId,
-            tipo: formData.get("tipo") as
-              | "notebook"
-              | "smartphone"
-              | "tablet"
-              | "monitor"
-              | "otro",
-            marca: formData.get("marca") as string,
-            modelo: formData.get("modelo") as string,
-            numeroSerie: (formData.get("numeroSerie") as string) || "",
+            tipo: tipoFinal,
+            tipoCustom: tipoCustom.trim() || undefined,
+            marca,
+            modelo,
+            numeroSerie,
             claveDesbloqueo: (formData.get("claveDesbloqueo") as string) || "",
             accesorios: (formData.get("accesorios") as string) || "",
             fallaDeclarada: formData.get("fallaDeclarada") as string,
@@ -65,15 +94,11 @@ export function OrdenForm({ clientes }: OrdenFormProps) {
             nombre: formData.get("nombre") as string,
             telefono: formData.get("telefono") as string,
             email: (formData.get("email") as string) || "",
-            tipo: formData.get("tipo") as
-              | "notebook"
-              | "smartphone"
-              | "tablet"
-              | "monitor"
-              | "otro",
-            marca: formData.get("marca") as string,
-            modelo: formData.get("modelo") as string,
-            numeroSerie: (formData.get("numeroSerie") as string) || "",
+            tipo: tipoFinal,
+            tipoCustom: tipoCustom.trim() || undefined,
+            marca,
+            modelo,
+            numeroSerie,
             claveDesbloqueo: (formData.get("claveDesbloqueo") as string) || "",
             accesorios: (formData.get("accesorios") as string) || "",
             fallaDeclarada: formData.get("fallaDeclarada") as string,
@@ -188,35 +213,87 @@ export function OrdenForm({ clientes }: OrdenFormProps) {
         <Select
           name="tipo"
           label="Tipo"
-          options={TIPO_OPTIONS}
+          options={tipoOptions}
           placeholder="Seleccioná..."
           required
           error={fieldErrors.tipo}
+          value={tipo}
+          onChange={(e) => setTipo(e.target.value)}
         />
 
-        <div className="grid grid-cols-2 gap-3">
+        {tipo === "otro" && (
+          <Input
+            name="tipoCustom"
+            label="Especificá el tipo"
+            placeholder="Ej: Parlantes, Consola, Auriculares..."
+            value={tipoCustom}
+            onChange={(e) => setTipoCustom(e.target.value)}
+            required
+            error={fieldErrors.tipoCustom}
+          />
+        )}
+
+        <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
             name="marca"
             label="Marca"
             placeholder="Lenovo, Samsung, HP..."
+            list="marcas-list"
             required
             error={fieldErrors.marca}
+            value={marca}
+            onChange={(e) => setMarca(e.target.value)}
           />
           <Input
             name="modelo"
             label="Modelo"
             placeholder="IdeaPad 3, Galaxy A52..."
+            list="modelos-list"
             required
             error={fieldErrors.modelo}
+            value={modelo}
+            onChange={(e) => setModelo(e.target.value)}
           />
         </div>
 
-        <Input
-          name="numeroSerie"
-          label="Número de serie (opcional)"
-          placeholder="Para QR o etiqueta"
-          error={fieldErrors.numeroSerie}
-        />
+        {/* Datalists con sugerencias de la DB */}
+        <datalist id="marcas-list">
+          {marcas.map((m) => (
+            <option key={m} value={m} />
+          ))}
+        </datalist>
+        <datalist id="modelos-list">
+          {modelos.map((m) => (
+            <option key={m} value={m} />
+          ))}
+        </datalist>
+
+        <div>
+          <label
+            htmlFor="numeroSerie"
+            className="block text-sm font-medium text-ink-secondary mb-1.5"
+          >
+            Número de serie (opcional)
+          </label>
+          <div className="flex gap-2">
+            <input
+              id="numeroSerie"
+              name="numeroSerie"
+              type="text"
+              placeholder="Para QR o etiqueta"
+              value={numeroSerie}
+              onChange={(e) => setNumeroSerie(e.target.value)}
+              className={`
+                flex-1 px-3 py-2 rounded-lg
+                bg-surface-base border border-white/10
+                text-ink-primary placeholder:text-ink-muted
+                focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30
+                transition-all duration-200
+              `}
+            />
+            <QrScannerButton onScan={(text) => setNumeroSerie(text)} />
+          </div>
+        </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
@@ -249,19 +326,13 @@ export function OrdenForm({ clientes }: OrdenFormProps) {
         />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-          <Input
+          <CurrencyInput
             name="presupuesto"
-            type="number"
             label="Presupuesto estimado"
-            placeholder="0"
-            min="0"
-            step="0.01"
-            defaultValue="0"
             error={fieldErrors.presupuesto}
           />
-          <Input
+          <DateInput
             name="fechaPromesa"
-            type="date"
             label="Fecha promesa (opcional)"
             error={fieldErrors.fechaPromesa}
           />

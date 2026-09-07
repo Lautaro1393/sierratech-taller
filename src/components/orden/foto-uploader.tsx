@@ -71,7 +71,7 @@ export function FotoUploader({ ordenId }: FotoUploaderProps) {
     });
   }
 
-  function handleDrop(e: DragEvent<HTMLDivElement>) {
+  function handleDrop(e: DragEvent<HTMLLabelElement>) {
     e.preventDefault();
     setDragOver(false);
     addFiles(e.dataTransfer.files);
@@ -106,29 +106,28 @@ export function FotoUploader({ ordenId }: FotoUploaderProps) {
 
   return (
     <div className="space-y-3">
-      <div
-        onDragOver={(e) => {
+      <label
+        onDragOver={(e: React.DragEvent<HTMLLabelElement>) => {
           e.preventDefault();
           setDragOver(true);
         }}
         onDragLeave={() => setDragOver(false)}
         onDrop={handleDrop}
         className={`
-          p-6 rounded-lg border-2 border-dashed text-center cursor-pointer
+          block p-6 rounded-lg border-2 border-dashed text-center cursor-pointer
           transition-colors
           ${dragOver
             ? "border-accent bg-accent/10"
             : "border-white/10 bg-surface-base/30 hover:border-accent/50"
           }
         `}
-        onClick={() => inputRef.current?.click()}
       >
         <input
           ref={inputRef}
           type="file"
           accept="image/*"
           multiple
-          className="hidden"
+          className="sr-only"
           onChange={(e) => addFiles(e.target.files)}
         />
         <Camera className="w-6 h-6 text-ink-muted mx-auto mb-2" />
@@ -139,7 +138,7 @@ export function FotoUploader({ ordenId }: FotoUploaderProps) {
         <p className="text-xs text-ink-muted mt-1">
           Max {MAX_FILES} fotos · 5 MB cada una · se comprimen a WebP antes de subir
         </p>
-      </div>
+      </label>
 
       {previews.length > 0 && (
         <div className="space-y-2">
