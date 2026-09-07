@@ -1,26 +1,26 @@
 import "server-only";
 import { createServerClient } from "@/lib/supabase";
 import { createAdminClient } from "@/lib/supabase/server-admin";
-import { optimizarFotoParaUpload } from "@/lib/utils/compress-image";
 
 const BUCKET = "fotos-reparaciones";
 
 /**
- * Sube una foto a Storage despues de comprimirla en cliente.
- * Usa el server client que lee las cookies del user autenticado.
+ * Sube una foto a Storage (ya comprimida en cliente).
+ * El cliente corre optimizarFotoParaUpload antes de mandar el FormData
+ * porque las APIs de compresion (Canvas, createImageBitmap) no existen
+ * en Node.js. El server solo recibe y sube el File ya WebP.
  * Devuelve el PATH (no URL) para guardar en historial_estados.fotos_urls.
  */
 export async function uploadFotoReparacion(
   ordenId: string,
   file: File
 ): Promise<string> {
-  const compressed = await optimizarFotoParaUpload(file);
   const fileName = `${ordenId}/${Date.now()}-${crypto.randomUUID().slice(0, 8)}.webp`;
 
   const supabase = await createServerClient();
   const { data, error } = await supabase.storage
     .from(BUCKET)
-    .upload(fileName, compressed, {
+    .upload(fileName, file, {
       contentType: "image/webp",
       cacheControl: "31536000",
       upsert: false,

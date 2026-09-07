@@ -4,6 +4,7 @@ import { useState, useRef, useTransition, type DragEvent } from "react";
 import { Camera, X, Upload, Loader2 } from "lucide-react";
 import { Button } from "@/components/ui/button";
 import { agregarFotoHistorial } from "@/app/actions/ordenes";
+import { optimizarFotoParaUpload } from "@/lib/utils/compress-image";
 
 const MAX_FILES = 3;
 const MAX_BYTES = 5 * 1024 * 1024;
@@ -78,19 +79,28 @@ export function FotoUploader({ ordenId }: FotoUploaderProps) {
 
   function upload() {
     if (previews.length === 0) return;
-    const formData = new FormData();
-    for (const p of previews) {
-      formData.append("files", p.file);
-    }
+    setError(null);
     startTransition(async () => {
-      const result = await agregarFotoHistorial(ordenId, formData);
-      if (!result.ok) {
-        setError(result.error);
-        return;
+      try {
+        // Comprimir en cliente (las APIs Canvas/createImageBitmap no
+        // existen en Node.js server action).
+        const formData = new FormData();
+        for (const p of previews) {
+          const compressed = await optimizarFotoParaUpload(p.file);
+          formData.append("files", compressed);
+        }
+        const result = await agregarFotoHistorial(ordenId, formData);
+        if (!result.ok) {
+          setError(result.error);
+          return;
+        }
+        previews.forEach((p) => URL.revokeObjectURL(p.url));
+        setPreviews([]);
+        window.location.reload();
+      } catch (err) {
+        console.error("Error al comprimir/subir:", err);
+        setError("Error al procesar las fotos. Probá de nuevo.");
       }
-      previews.forEach((p) => URL.revokeObjectURL(p.url));
-      setPreviews([]);
-      window.location.reload();
     });
   }
 
