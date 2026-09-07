@@ -1,7 +1,6 @@
 import Link from "next/link";
 import { createServerClient } from "@/lib/supabase";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Button } from "@/components/ui/button";
 import { ImportarContactosButton } from "@/components/clientes/importar-contactos-button";
 import { formatFecha } from "@/lib/utils";
 import type { Cliente } from "@/types";
@@ -55,22 +54,30 @@ export default async function ClientesPage() {
           <CardContent>
             <ul className="divide-y divide-white/5">
               {clientes.map((c) => (
-                <li
-                  key={c.id}
-                  className="py-3 flex items-center justify-between gap-3"
-                >
-                  <div className="min-w-0 flex-1">
-                    <p className="text-sm font-medium text-ink-primary truncate">
-                      {c.nombre}
-                    </p>
-                    <p className="text-xs text-ink-muted">
-                      {c.telefono}
-                      {c.email && ` · ${c.email}`}
-                    </p>
-                  </div>
-                  <span className="text-[10px] text-ink-muted/60 shrink-0 hidden sm:inline">
-                    {formatFecha(c.created_at)}
-                  </span>
+                <li key={c.id}>
+                  <Link
+                    href={`/clientes/${c.id}`}
+                    className="py-3 flex items-center justify-between gap-3 hover:bg-white/[0.03] -mx-3 px-3 rounded-md transition-colors group"
+                  >
+                    <div className="min-w-0 flex-1">
+                      <p className="text-sm font-medium text-ink-primary truncate group-hover:text-accent-green transition-colors">
+                        {c.nombre}
+                      </p>
+                      <p className="text-xs text-ink-muted">
+                        {c.telefono}
+                        {c.email && ` · ${c.email}`}
+                      </p>
+                    </div>
+                    <span className="text-[10px] text-ink-muted/60 shrink-0 hidden sm:inline">
+                      {formatFecha(c.created_at)}
+                    </span>
+                    <span
+                      aria-hidden="true"
+                      className="text-ink-muted group-hover:text-accent-green shrink-0 transition-colors"
+                    >
+                      ›
+                    </span>
+                  </Link>
                 </li>
               ))}
             </ul>
