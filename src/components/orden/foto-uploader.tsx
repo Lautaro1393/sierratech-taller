@@ -8,6 +8,13 @@ import { agregarFotoHistorial } from "@/app/actions/ordenes";
 const MAX_FILES = 3;
 const MAX_BYTES = 5 * 1024 * 1024;
 
+function generarIdUnico(): string {
+  if (typeof crypto !== "undefined" && typeof crypto.randomUUID === "function") {
+    return crypto.randomUUID();
+  }
+  return `${Date.now()}-${Math.random().toString(36).slice(2, 10)}`;
+}
+
 interface FotoUploaderProps {
   ordenId: string;
 }
@@ -40,7 +47,7 @@ export function FotoUploader({ ordenId }: FotoUploaderProps) {
         continue;
       }
       accepted.push({
-        id: crypto.randomUUID(),
+        id: generarIdUnico(),
         file,
         url: URL.createObjectURL(file),
       });

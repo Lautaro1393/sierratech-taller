@@ -6,6 +6,7 @@ import {
   DragOverlay,
   PointerSensor,
   TouchSensor,
+  KeyboardSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -46,10 +47,11 @@ export function KanbanBoard({ ordenes }: KanbanBoardProps) {
   const [pausePrompt, setPausePrompt] = useState<PausePromptState | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(PointerSensor, { activationConstraint: { distance: 8 } }),
     useSensor(TouchSensor, {
-      activationConstraint: { delay: 200, tolerance: 5 },
-    })
+      activationConstraint: { delay: 100, tolerance: 8 },
+    }),
+    useSensor(KeyboardSensor)
   );
 
   const items = useMemo(() => {

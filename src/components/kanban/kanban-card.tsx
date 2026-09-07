@@ -37,8 +37,9 @@ export function KanbanCard({ orden, isOverlay = false }: KanbanCardProps) {
           : undefined
       }
       className={`
-        group relative rounded-lg p-3
+        group relative rounded-lg p-3 select-none
         bg-surface-base border border-white/5 border-l-4
+        touch-none
         ${semaphore}
         ${isOverlay ? "shadow-2xl shadow-black/50 rotate-1" : ""}
         ${isDragging ? "opacity-30" : ""}
