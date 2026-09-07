@@ -8,6 +8,11 @@ const nextConfig: NextConfig = {
     "0.0.0.0",
     "172.16.0.2",
   ],
+  experimental: {
+    serverActions: {
+      bodySizeLimit: "10mb",
+    },
+  },
 };
 
 export default nextConfig;
