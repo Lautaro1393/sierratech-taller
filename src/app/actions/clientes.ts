@@ -13,7 +13,7 @@ const importSchema = z.object({
     .array(
       z.object({
         nombre: z.string().min(1).max(100),
-        telefono: z.string().min(6).max(20),
+        telefono: z.string().min(6).max(30),
         email: z.string().email().nullable().optional(),
       })
     )

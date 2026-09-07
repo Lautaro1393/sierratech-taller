@@ -133,21 +133,19 @@ export function ImportarContactos({ onClose, onSuccess }: ImportarContactosProps
         <div className="flex-1 overflow-y-auto p-4 space-y-4">
           {state.type === "empty" && (
             <div>
-              <input
-                ref={inputRef}
-                type="file"
-                accept=".vcf,.csv,text/vcard,text/csv,text/plain"
-                onChange={(e) => {
-                  const f = e.target.files?.[0];
-                  if (f) handleFile(f);
-                }}
-                className="hidden"
-              />
-              <button
-                type="button"
-                onClick={() => inputRef.current?.click()}
+              <label
                 className="block w-full p-8 rounded-lg border-2 border-dashed border-white/10 hover:border-accent/50 hover:bg-accent/5 transition-colors text-center cursor-pointer"
               >
+                <input
+                  ref={inputRef}
+                  type="file"
+                  accept=".vcf,.csv,text/vcard,text/csv,text/plain"
+                  className="sr-only"
+                  onChange={(e) => {
+                    const f = e.target.files?.[0];
+                    if (f) handleFile(f);
+                  }}
+                />
                 <FileText className="w-10 h-10 text-ink-muted mx-auto mb-2" />
                 <p className="text-sm text-ink-primary font-medium">
                   Subir archivo .vcf o .csv
@@ -155,7 +153,7 @@ export function ImportarContactos({ onClose, onSuccess }: ImportarContactosProps
                 <p className="text-xs text-ink-muted mt-1">
                   Contactos de iOS, Android, Google Contacts, etc.
                 </p>
-              </button>
+              </label>
               {importError && (
                 <div className="mt-3 flex items-center gap-2 text-sm text-status-red">
                   <AlertCircle className="w-4 h-4 shrink-0" />
