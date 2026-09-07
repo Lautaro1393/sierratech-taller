@@ -1,7 +1,7 @@
 "use client";
 
 import { useRouter, useSearchParams } from "next/navigation";
-import { useTransition, useCallback } from "react";
+import { useTransition, useRef, useEffect } from "react";
 import { Search, X } from "lucide-react";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -10,33 +10,34 @@ import { ESTADO_ORDER, ESTADO_LABELS } from "@/types";
 const statusOptions = [
   { value: "", label: "Todos los estados" },
   ...ESTADO_ORDER.map((e) => ({ value: e, label: ESTADO_LABELS[e] })),
+  { value: "cancelado", label: ESTADO_LABELS.cancelado },
 ];
 
 export function OrdenesFilters() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const [, startTransition] = useTransition();
+  const timerRef = useRef<ReturnType<typeof setTimeout>>(null);
+
+  useEffect(() => () => clearTimeout(timerRef.current!), []);
 
   const search = searchParams.get("search") ?? "";
   const estado = searchParams.get("estado") ?? "";
   const desde = searchParams.get("desde") ?? "";
   const hasta = searchParams.get("hasta") ?? "";
 
-  const setParam = useCallback(
-    (key: string, value: string) => {
-      const params = new URLSearchParams(searchParams.toString());
-      if (value) {
-        params.set(key, value);
-      } else {
-        params.delete(key);
-      }
-      params.delete("page");
-      startTransition(() => {
-        router.push(`?${params.toString()}`, { scroll: false });
-      });
-    },
-    [router, searchParams, startTransition]
-  );
+  const setParam = (key: string, value: string) => {
+    const params = new URLSearchParams(searchParams.toString());
+    if (value) {
+      params.set(key, value);
+    } else {
+      params.delete(key);
+    }
+    params.delete("page");
+    startTransition(() => {
+      router.push(`?${params.toString()}`, { scroll: false });
+    });
+  };
 
   const hasFilters = search || estado || desde || hasta;
 
@@ -57,9 +58,8 @@ export function OrdenesFilters() {
             defaultValue={search}
             onChange={(e) => {
               const v = e.target.value;
-              const w = globalThis as unknown as Record<string, ReturnType<typeof setTimeout>>;
-              clearTimeout(w.__searchTimer);
-              w.__searchTimer = setTimeout(() => {
+              clearTimeout(timerRef.current!);
+              timerRef.current = setTimeout(() => {
                 setParam("search", v);
               }, 300);
             }}

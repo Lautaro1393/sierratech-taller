@@ -19,7 +19,7 @@ export interface OrdenListItem {
       nombre: string;
       telefono: string;
     };
-  };
+  } | null;
 }
 
 export interface OrdenesQueryResult {
@@ -43,8 +43,8 @@ export async function fetchOrdenes(
   filters: OrdenesFilters = {}
 ): Promise<OrdenesQueryResult> {
   const supabase = await createServerClient();
-  const page = filters.page ?? 1;
-  const pageSize = filters.pageSize ?? 20;
+  const page = Math.max(1, Number(filters.page) || 1);
+  const pageSize = Math.min(100, Math.max(1, filters.pageSize ?? 20));
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
@@ -63,10 +63,16 @@ export async function fetchOrdenes(
     );
 
   if (filters.search) {
-    const s = `%${filters.search}%`;
-    query = query.or(
-      `numero_ot.eq.${filters.search},falla_declarada.ilike.${s}`,
-    );
+    const safe = filters.search.replace(/[,()]/g, "");
+    const s = `%${safe}%`;
+    const num = Number(safe);
+    if (!isNaN(num) && num > 0) {
+      query = query.or(
+        `numero_ot.eq.${num},falla_declarada.ilike.${s}`,
+      );
+    } else {
+      query = query.ilike("falla_declarada", s);
+    }
   }
 
   if (filters.estado) {

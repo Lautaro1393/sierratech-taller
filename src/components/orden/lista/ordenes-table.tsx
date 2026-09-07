@@ -72,17 +72,17 @@ export function OrdenesTable({ ordenes }: OrdenesTableProps) {
               </td>
               <td className="py-3">
                 <p className="text-ink-primary truncate max-w-[180px]">
-                  {o.equipo.cliente.nombre}
+                  {o.equipo?.cliente?.nombre ?? "—"}
                 </p>
                 <p className="text-xs text-ink-muted sm:hidden">
-                  {o.equipo.marca} {o.equipo.modelo}
+                  {o.equipo?.marca} {o.equipo?.modelo}
                 </p>
               </td>
               <td className="py-3 hidden sm:table-cell">
                 <p className="text-ink-secondary truncate max-w-[200px]">
-                  {o.equipo.marca} {o.equipo.modelo}
+                  {o.equipo?.marca} {o.equipo?.modelo}
                 </p>
-                <p className="text-xs text-ink-muted">{o.equipo.tipo}</p>
+                <p className="text-xs text-ink-muted">{o.equipo?.tipo}</p>
               </td>
               <td className="py-3">
                 <Badge variant={BADGE_VARIANT[o.estado]} dot>
