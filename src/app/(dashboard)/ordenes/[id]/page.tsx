@@ -10,12 +10,14 @@ import { PresupuestoEditor } from "@/components/orden/presupuesto-editor";
 import { ResumenCierre } from "@/components/orden/resumen-cierre";
 import { AgregarNotaHistorial } from "@/components/orden/agregar-nota-historial";
 import { CompartirTrackingSection } from "@/components/orden/compartir-tracking-section";
+import { FotoUploader } from "@/components/orden/foto-uploader";
 import {
   formatNumeroOt,
   formatFechaHora,
 } from "@/lib/utils";
 import { ESTADO_LABELS, type EstadoOrden, type HistorialEstado, type TipoIntervencion } from "@/types";
 import { obtenerConfiguracionPricing } from "@/app/actions/settings";
+import { obtenerSignedUrlsDeOrden } from "@/app/actions/ordenes";
 import {
   getSesionesPorOrden,
   getSesionActivaPorOrden,
@@ -45,7 +47,7 @@ export default async function OrdenDetallePage({
 
   if (!orden) notFound();
 
-  const [sesiones, sesionActiva, config, historialRes] = await Promise.all([
+  const [sesiones, sesionActiva, config, historialRes, signedUrls] = await Promise.all([
     getSesionesPorOrden(id),
     getSesionActivaPorOrden(id),
     obtenerConfiguracionPricing(),
@@ -54,6 +56,7 @@ export default async function OrdenDetallePage({
       .select("*")
       .eq("orden_id", id)
       .order("created_at", { ascending: false }),
+    obtenerSignedUrlsDeOrden(id),
   ]);
 
   const estado = orden.estado as EstadoOrden;
@@ -149,43 +152,72 @@ export default async function OrdenDetallePage({
             </CardHeader>
             <CardContent className="space-y-4">
               <AgregarNotaHistorial ordenId={orden.id} />
+              <FotoUploader ordenId={orden.id} />
               {historialRes.data && historialRes.data.length > 0 ? (
                 <ol className="space-y-3 pt-2">
-                  {(historialRes.data as HistorialEstado[]).map((h) => (
-                    <li
-                      key={h.id}
-                      className="flex gap-3 pb-3 border-b border-white/5 last:border-0"
-                    >
-                      <div className="w-2 h-2 rounded-full bg-accent mt-2 shrink-0" />
-                      <div className="flex-1 min-w-0">
-                        <div className="flex items-center gap-2 flex-wrap">
-                          <p className="text-sm text-ink-primary">
-                            {h.estado_anterior
-                              ? `${ESTADO_LABELS[h.estado_anterior]} → ${ESTADO_LABELS[h.estado_nuevo]}`
-                              : `Orden creada en ${ESTADO_LABELS[h.estado_nuevo]}`}
+                  {(historialRes.data as HistorialEstado[]).map((h) => {
+                    const urlsPorPath = new Map(
+                      signedUrls.map((s) => [s.path, s.url])
+                    );
+                    const fotosUrls = (h.fotos_urls ?? [])
+                      .map((p) => ({ path: p, url: urlsPorPath.get(p) }))
+                      .filter((f): f is { path: string; url: string } => !!f.url);
+                    return (
+                      <li
+                        key={h.id}
+                        className="flex gap-3 pb-3 border-b border-white/5 last:border-0"
+                      >
+                        <div className="w-2 h-2 rounded-full bg-accent mt-2 shrink-0" />
+                        <div className="flex-1 min-w-0">
+                          <div className="flex items-center gap-2 flex-wrap">
+                            <p className="text-sm text-ink-primary">
+                              {h.estado_anterior
+                                ? `${ESTADO_LABELS[h.estado_anterior]} → ${ESTADO_LABELS[h.estado_nuevo]}`
+                                : `Orden creada en ${ESTADO_LABELS[h.estado_nuevo]}`}
+                            </p>
+                            {h.nota_cliente && (
+                              <span className="text-[10px] uppercase tracking-wider text-status-blue bg-status-blue/10 px-1.5 py-0.5 rounded">
+                                Para cliente
+                              </span>
+                            )}
+                          </div>
+                          <p className="text-xs text-ink-muted mt-0.5">
+                            {formatFechaHora(h.created_at)}
                           </p>
+                          {h.nota_interna && (
+                            <p className="text-sm text-ink-secondary mt-1">
+                              {h.nota_interna}
+                            </p>
+                          )}
+                          {fotosUrls.length > 0 && (
+                            <div className="grid grid-cols-3 sm:grid-cols-4 gap-2 mt-2">
+                              {fotosUrls.map((f) => (
+                                <a
+                                  key={f.path}
+                                  href={f.url}
+                                  target="_blank"
+                                  rel="noopener noreferrer"
+                                  className="block aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-accent transition-colors"
+                                >
+                                  {/* eslint-disable-next-line @next/next/no-img-element */}
+                                  <img
+                                    src={f.url}
+                                    alt="Foto de la reparación"
+                                    className="w-full h-full object-cover"
+                                  />
+                                </a>
+                              ))}
+                            </div>
+                          )}
                           {h.nota_cliente && (
-                            <span className="text-[10px] uppercase tracking-wider text-status-blue bg-status-blue/10 px-1.5 py-0.5 rounded">
-                              Para cliente
-                            </span>
+                            <p className="text-sm text-status-blue mt-1">
+                              &ldquo;{h.nota_cliente}&rdquo;
+                            </p>
                           )}
                         </div>
-                        <p className="text-xs text-ink-muted mt-0.5">
-                          {formatFechaHora(h.created_at)}
-                        </p>
-                        {h.nota_interna && (
-                          <p className="text-sm text-ink-secondary mt-1">
-                            {h.nota_interna}
-                          </p>
-                        )}
-                        {h.nota_cliente && (
-                          <p className="text-sm text-status-blue mt-1">
-                            “{h.nota_cliente}”
-                          </p>
-                        )}
-                      </div>
-                    </li>
-                  ))}
+                      </li>
+                    );
+                  })}
                 </ol>
               ) : (
                 <p className="text-ink-muted text-sm">Sin movimientos aún.</p>

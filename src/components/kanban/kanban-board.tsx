@@ -5,6 +5,7 @@ import {
   DndContext,
   DragOverlay,
   PointerSensor,
+  TouchSensor,
   useSensor,
   useSensors,
   type DragEndEvent,
@@ -45,7 +46,10 @@ export function KanbanBoard({ ordenes }: KanbanBoardProps) {
   const [pausePrompt, setPausePrompt] = useState<PausePromptState | null>(null);
 
   const sensors = useSensors(
-    useSensor(PointerSensor, { activationConstraint: { distance: 6 } })
+    useSensor(PointerSensor, { activationConstraint: { distance: 6 } }),
+    useSensor(TouchSensor, {
+      activationConstraint: { delay: 200, tolerance: 5 },
+    })
   );
 
   const items = useMemo(() => {

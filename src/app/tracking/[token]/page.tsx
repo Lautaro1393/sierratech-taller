@@ -3,6 +3,7 @@ import {
   getOrdenPublicaByToken,
   getHistorialPublicoByToken,
 } from "@/lib/queries/tracking";
+import { getSignedUrlsPublic } from "@/lib/supabase/storage";
 import { ESTADO_LABELS, type EstadoOrden } from "@/types";
 import { formatFecha, formatFechaHora } from "@/lib/utils";
 
@@ -58,6 +59,15 @@ export default async function TrackingPage({
     getOrdenPublicaByToken(token),
     getHistorialPublicoByToken(token),
   ]);
+
+  // Generar signed URLs para las fotos del historial (requiere service_role)
+  const allFotoPaths = Array.from(
+    new Set(
+      (historial ?? []).flatMap((h) => h.fotos_paths ?? [])
+    )
+  );
+  const signedFotos = await getSignedUrlsPublic(allFotoPaths);
+  const urlPorPath = new Map(signedFotos.map((s) => [s.path, s.url]));
 
   if (!orden) {
     return (
@@ -205,8 +215,32 @@ export default async function TrackingPage({
                         </span>
                       </div>
                       <p className="text-sm text-ink-secondary mt-1">
-                        “{h.nota_cliente}”
+                        &ldquo;{h.nota_cliente}&rdquo;
                       </p>
+                      {h.fotos_paths && h.fotos_paths.length > 0 && (
+                        <div className="grid grid-cols-3 gap-2 mt-2">
+                          {h.fotos_paths.map((path) => {
+                            const url = urlPorPath.get(path);
+                            if (!url) return null;
+                            return (
+                              <a
+                                key={path}
+                                href={url}
+                                target="_blank"
+                                rel="noopener noreferrer"
+                                className="block aspect-square rounded-lg overflow-hidden border border-white/10 hover:border-accent transition-colors"
+                              >
+                                {/* eslint-disable-next-line @next/next/no-img-element */}
+                                <img
+                                  src={url}
+                                  alt="Foto del taller"
+                                  className="w-full h-full object-cover"
+                                />
+                              </a>
+                            );
+                          })}
+                        </div>
+                      )}
                     </div>
                   </li>
                 );

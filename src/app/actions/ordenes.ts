@@ -7,6 +7,7 @@ import { createServerClient } from "@/lib/supabase";
 import type { EstadoOrden } from "@/types";
 import { ordenFormSchema, type OrdenFormInput } from "@/lib/validations/orden";
 import { autoStopSesionActiva } from "./tiempo";
+import { uploadFotoReparacion, getSignedUrls, extractFotoPaths } from "@/lib/supabase/storage";
 
 export type ActualizarEstadoResult =
   | { ok: true; pausaSugerida?: boolean; autoStop?: boolean }
@@ -284,4 +285,90 @@ export async function agregarNotaHistorial(
 
   revalidatePath(`/ordenes/${ordenId}`);
   return { ok: true, data: { historialId: data.id } };
+}
+
+const MAX_FOTOS_POR_SUBIDA = 3;
+
+export async function agregarFotoHistorial(
+  ordenId: string,
+  formData: FormData
+): Promise<ActionResult<{ count: number }>> {
+  const files = formData.getAll("files").filter(isImageFile);
+  if (files.length === 0) {
+    return { ok: false, error: "Subí al menos una imagen" };
+  }
+  if (files.length > MAX_FOTOS_POR_SUBIDA) {
+    return {
+      ok: false,
+      error: `Máximo ${MAX_FOTOS_POR_SUBIDA} fotos por subida`,
+    };
+  }
+
+  const supabase = await createServerClient();
+  const { data: ordenActual, error: fetchError } = await supabase
+    .from("ordenes")
+    .select("estado")
+    .eq("id", ordenId)
+    .single();
+  if (fetchError || !ordenActual) {
+    return { ok: false, error: "Orden no encontrada" };
+  }
+
+  const paths: string[] = [];
+  for (const file of files) {
+    try {
+      const path = await uploadFotoReparacion(ordenId, file as File);
+      paths.push(path);
+    } catch (err) {
+      console.error("Error subiendo foto:", err);
+      return {
+        ok: false,
+        error: `No se pudo subir ${(file as File).name}. Probá de nuevo.`,
+      };
+    }
+  }
+
+  const { error: insertError } = await supabase
+    .from("historial_estados")
+    .insert({
+      orden_id: ordenId,
+      estado_anterior: ordenActual.estado,
+      estado_nuevo: ordenActual.estado,
+      nota_interna: `${paths.length === 1 ? "Foto subida" : `${paths.length} fotos subidas`}`,
+      nota_cliente: null,
+      fotos_urls: paths,
+    });
+
+  if (insertError) {
+    return { ok: false, error: insertError.message };
+  }
+
+  revalidatePath(`/ordenes/${ordenId}`);
+  return { ok: true, data: { count: paths.length } };
+}
+
+function isImageFile(value: FormDataEntryValue | null): boolean {
+  return (
+    value !== null &&
+    value !== "undefined" &&
+    typeof value === "object" &&
+    "name" in value &&
+    value instanceof File &&
+    value.type.startsWith("image/")
+  );
+}
+
+export async function obtenerSignedUrlsDeOrden(
+  ordenId: string,
+  expiresInSeconds = 3600
+): Promise<{ path: string; url: string }[]> {
+  const supabase = await createServerClient();
+  const { data: historial } = await supabase
+    .from("historial_estados")
+    .select("fotos_urls")
+    .eq("orden_id", ordenId);
+  if (!historial) return [];
+  const paths = extractFotoPaths(historial);
+  if (paths.length === 0) return [];
+  return getSignedUrls(paths, expiresInSeconds);
 }

@@ -148,7 +148,7 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 - [ ] 4.1 Autocomplete de clientes
 - [ ] 4.2 Selector de equipo
 - [ ] 4.3 Scanner QR de série
-- [ ] 4.4 Upload de fotos con compresión
+- [x] 4.4 Upload de fotos con compresión (WebP 1600px q0.8, max 3 fotos × 5MB por subida, bucket privado + signed URLs)
 
 ### Fase 5: Detalle de Orden ✅
 - [x] 5.1 Vista detalle con timeline (ya estaba la base)

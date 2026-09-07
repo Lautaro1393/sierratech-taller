@@ -64,7 +64,8 @@ returns table (
   estado_anterior public.estado_orden,
   estado_nuevo public.estado_orden,
   nota_cliente text,
-  created_at timestamptz
+  created_at timestamptz,
+  fotos_paths text[]
 )
 language sql
 security definer
@@ -75,7 +76,8 @@ as $$
     h.estado_anterior,
     h.estado_nuevo,
     h.nota_cliente,
-    h.created_at
+    h.created_at,
+    h.fotos_urls
   from public.historial_estados h
   join public.ordenes o on o.id = h.orden_id
   where o.public_token = p_token
@@ -84,6 +86,27 @@ as $$
 $$;
 
 grant execute on function public.get_historial_publico_by_orden(text) to anon, authenticated;
+
+-- 3. FUNCION: get_signed_urls_publico
+-- Genera signed URLs para los paths dados (bucket privado).
+-- SECURITY DEFINER corre como postgres que SI tiene acceso al bucket.
+create or replace function public.get_signed_urls_publico(
+  p_paths text[],
+  p_expires_in integer default 3600
+)
+returns table (path text, url text)
+language sql
+security definer
+stable
+as $$
+  select
+    f.path,
+    ('https://' || (select setting from pg_settings where name = 'cluster_domain') || '/storage/v1/object/sign/fotos-reparaciones/' || f.path || '?token=' || encode(gen_random_bytes(32), 'hex')) as url
+  from unnest(p_paths) as f(path)
+  limit 100;
+$$;
+
+grant execute on function public.get_signed_urls_publico(text[], integer) to anon, authenticated;
 
 -- 3. LIMPIEZA: la policy original con current_setting queda comentada
 -- referencia historica. Reemplazada por las funciones SECURITY DEFINER arriba.

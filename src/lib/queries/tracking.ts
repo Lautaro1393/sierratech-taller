@@ -22,6 +22,7 @@ export interface HistorialPublicoItem {
   estado_nuevo: string;
   nota_cliente: string;
   created_at: string;
+  fotos_paths: string[] | null;
 }
 
 export async function getOrdenPublicaByToken(
