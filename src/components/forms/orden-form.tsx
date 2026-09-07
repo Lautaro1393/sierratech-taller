@@ -25,6 +25,8 @@ const TIPO_BASE = [
   { value: "monitor", label: "Monitor" },
 ];
 
+const TIPOS_BASE_VALUES = new Set(TIPO_BASE.map((t) => t.value));
+
 export function OrdenForm({
   clientes,
   marcas,
@@ -46,11 +48,40 @@ export function OrdenForm({
   const [modelo, setModelo] = useState<string>("");
   const [numeroSerie, setNumeroSerie] = useState<string>("");
 
+  const tiposCustomNormalizados = tiposCustom.map((t) => t.toLowerCase());
+
   const tipoOptions = [
     ...TIPO_BASE,
-    ...tiposCustom.map((t) => ({ value: `otro:${t}`, label: `${t} (otro)` })),
+    ...tiposCustom.map((t) => ({ value: `existente:${t}`, label: t })),
     { value: "otro", label: "+ Otro tipo" },
   ];
+
+  // Detección de duplicado mientras el user tipea en "+ Otro tipo"
+  // (case-insensitive + trim). Si coincide con un tipo custom conocido,
+  // lo marcamos como warning visual (el server action también valida).
+  const tipoCustomNormalizado = tipoCustom.trim().toLowerCase();
+  const tipoCustomDuplicado =
+    tipoCustomNormalizado.length >= 2 &&
+    (TIPOS_BASE_VALUES.has(tipoCustomNormalizado) ||
+      tiposCustomNormalizados.includes(tipoCustomNormalizado))
+      ? tiposCustom.find(
+          (t) => t.toLowerCase() === tipoCustomNormalizado
+        ) ?? tipoCustomNormalizado
+      : null;
+
+  // El Select controla solo el STATE local; NO tiene name="tipo".
+  // El server action espera tipo ∈ {notebook, smartphone, tablet, monitor, otro}.
+  // Para tipos custom (existentes o nuevos) mandamos tipo="otro" + tipoCustom="nombre".
+  const esCustom = tipo.startsWith("existente:") || tipo === "otro";
+  const tipoEnviado: "notebook" | "smartphone" | "tablet" | "monitor" | "otro" =
+    esCustom
+      ? "otro"
+      : (tipo as "notebook" | "smartphone" | "tablet" | "monitor");
+  const tipoCustomEnviado: string | undefined = esCustom
+    ? (tipo.startsWith("existente:")
+        ? tipo.slice("existente:".length).toLowerCase()
+        : tipoCustom.trim().toLowerCase())
+    : undefined;
 
   async function handleSubmit(formData: FormData) {
     setError(null);
@@ -61,15 +92,31 @@ export function OrdenForm({
 
     const fechaPromesa = (formData.get("fechaPromesa") as string) || "";
 
-    // Si el value es "otro:speaker", guardar el prefijo y usar tipoCustom
-    let tipoFinal: "notebook" | "smartphone" | "tablet" | "monitor" | "otro" =
-      "otro";
-    if (tipo.startsWith("otro:")) {
-      tipoFinal = "otro";
-    } else if (tipo === "otro") {
-      tipoFinal = "otro";
-    } else {
-      tipoFinal = tipo as typeof tipoFinal;
+    // Validación cliente (safety net; Zod también valida).
+    // Solo bloqueamos si el user está CREANDO uno nuevo (tipo === "otro" sin
+    // haber seleccionado uno existente del dropdown).
+    if (!tipo) {
+      setFieldErrors({ tipo: "Seleccioná un tipo" });
+      setError("Revisá los datos del formulario");
+      return;
+    }
+    if (tipo === "otro") {
+      const custom = tipoCustom.trim().toLowerCase();
+      if (!custom) {
+        setFieldErrors({ tipoCustom: "Especificá el tipo de equipo" });
+        setError("Revisá los datos del formulario");
+        return;
+      }
+      if (
+        TIPOS_BASE_VALUES.has(custom) ||
+        tiposCustomNormalizados.includes(custom)
+      ) {
+        setFieldErrors({
+          tipoCustom: `Ya existe el tipo "${custom}". Seleccionalo de la lista.`,
+        });
+        setError("Revisá los datos del formulario");
+        return;
+      }
     }
 
     const input =
@@ -77,8 +124,8 @@ export function OrdenForm({
         ? {
             clienteModo: "existente" as const,
             clienteId,
-            tipo: tipoFinal,
-            tipoCustom: tipoCustom.trim() || undefined,
+            tipo: tipoEnviado,
+            tipoCustom: tipoCustomEnviado,
             marca,
             modelo,
             numeroSerie,
@@ -94,8 +141,8 @@ export function OrdenForm({
             nombre: formData.get("nombre") as string,
             telefono: formData.get("telefono") as string,
             email: (formData.get("email") as string) || "",
-            tipo: tipoFinal,
-            tipoCustom: tipoCustom.trim() || undefined,
+            tipo: tipoEnviado,
+            tipoCustom: tipoCustomEnviado,
             marca,
             modelo,
             numeroSerie,
@@ -211,27 +258,61 @@ export function OrdenForm({
         </h2>
 
         <Select
-          name="tipo"
           label="Tipo"
           options={tipoOptions}
           placeholder="Seleccioná..."
           required
           error={fieldErrors.tipo}
           value={tipo}
-          onChange={(e) => setTipo(e.target.value)}
+          onChange={(e) => {
+            const value = e.target.value;
+            setTipo(value);
+            const errors = { ...fieldErrors };
+            delete errors.tipoCustom;
+            setFieldErrors(errors);
+            if (value.startsWith("existente:")) {
+              setTipoCustom(value.slice("existente:".length));
+            } else {
+              setTipoCustom("");
+            }
+          }}
         />
 
         {tipo === "otro" && (
-          <Input
-            name="tipoCustom"
-            label="Especificá el tipo"
-            placeholder="Ej: Parlantes, Consola, Auriculares..."
-            value={tipoCustom}
-            onChange={(e) => setTipoCustom(e.target.value)}
-            required
-            error={fieldErrors.tipoCustom}
-          />
+          <div className="space-y-1.5">
+            <Input
+              name="tipoCustom"
+              label="Especificá el tipo"
+              placeholder="Ej: Parlantes, Consola, Auriculares..."
+              value={tipoCustom}
+              onChange={(e) => setTipoCustom(e.target.value)}
+              required
+              error={fieldErrors.tipoCustom}
+            />
+            {tipoCustomDuplicado && !fieldErrors.tipoCustom && (
+              <p className="text-xs text-status-yellow">
+                Ya existe &quot;{tipoCustomDuplicado}&quot;. Seleccionalo del
+                desplegable en lugar de crearlo de nuevo.
+              </p>
+            )}
+          </div>
         )}
+
+        {tipo.startsWith("existente:") && (
+          <p className="text-xs text-ink-muted -mt-2">
+            Tipo custom existente:{" "}
+            <span className="text-accent font-medium">{tipoCustom}</span>{" "}
+            (se mantiene en la lista para futuros ingresos)
+          </p>
+        )}
+
+        {/* Hidden inputs que envían el tipo resuelto al server action */}
+        <input type="hidden" name="tipo" value={tipoEnviado} />
+        <input
+          type="hidden"
+          name="tipoCustom"
+          value={tipoCustomEnviado ?? ""}
+        />
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
           <Input
@@ -355,7 +436,7 @@ export function OrdenForm({
         </label>
       </section>
 
-      <div className="sticky bottom-0 -mx-6 px-6 pt-4 pb-2 bg-gradient-to-t from-surface-base via-surface-base to-transparent">
+      <div className="md:sticky md:bottom-0 md:-mx-6 md:px-6 md:pt-4 md:pb-2 md:bg-gradient-to-t md:from-surface-base md:via-surface-base md:to-transparent mt-6 md:mt-0">
         <Button
           type="submit"
           size="lg"

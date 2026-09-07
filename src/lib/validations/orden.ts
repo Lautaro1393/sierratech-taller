@@ -14,22 +14,36 @@ export const clienteSchema = z.object({
     .optional(),
 });
 
-export const equipoSchema = z.object({
-  clienteId: z.string().uuid("ID de cliente inválido"),
-  tipo: z.enum(["notebook", "smartphone", "tablet", "monitor", "otro"], {
-    message: "Seleccioná un tipo",
-  }),
-  tipoCustom: z
-    .string()
-    .max(40, "Máximo 40 caracteres")
-    .optional()
-    .or(z.literal("")),
-  marca: z.string().min(1, "Ingresá la marca").max(60),
-  modelo: z.string().min(1, "Ingresá el modelo").max(80),
-  numeroSerie: z.string().max(80).optional().or(z.literal("")),
-  claveDesbloqueo: z.string().max(80).optional().or(z.literal("")),
-  accesorios: z.string().max(200).optional().or(z.literal("")),
-});
+export const equipoSchema = z
+  .object({
+    clienteId: z.string().uuid("ID de cliente inválido"),
+    tipo: z.enum(["notebook", "smartphone", "tablet", "monitor", "otro"], {
+      message: "Seleccioná un tipo",
+    }),
+    tipoCustom: z
+      .string()
+      .max(40, "Máximo 40 caracteres")
+      .optional()
+      .or(z.literal("")),
+    marca: z.string().min(1, "Ingresá la marca").max(60),
+    modelo: z.string().min(1, "Ingresá el modelo").max(80),
+    numeroSerie: z.string().max(80).optional().or(z.literal("")),
+    claveDesbloqueo: z.string().max(80).optional().or(z.literal("")),
+    accesorios: z.string().max(200).optional().or(z.literal("")),
+  })
+  .refine(
+    (data) => {
+      if (data.tipo !== "otro") return true;
+      return (
+        typeof data.tipoCustom === "string" &&
+        data.tipoCustom.trim().length >= 2
+      );
+    },
+    {
+      message: "Especificá el tipo (mínimo 2 caracteres)",
+      path: ["tipoCustom"],
+    }
+  );
 
 export const ordenSchema = z.object({
   equipoId: z.string().uuid("ID de equipo inválido"),
@@ -41,39 +55,53 @@ export const ordenSchema = z.object({
   fechaPromesa: z.string().optional().or(z.literal("")),
 });
 
-export const ordenFormSchema = z.discriminatedUnion("clienteModo", [
-  z.object({
-    clienteModo: z.literal("existente"),
-    clienteId: z.string().uuid("Seleccioná un cliente"),
-    tipo: equipoSchema.shape.tipo,
-    tipoCustom: equipoSchema.shape.tipoCustom,
-    marca: equipoSchema.shape.marca,
-    modelo: equipoSchema.shape.modelo,
-    numeroSerie: equipoSchema.shape.numeroSerie,
-    claveDesbloqueo: equipoSchema.shape.claveDesbloqueo,
-    accesorios: equipoSchema.shape.accesorios,
-    fallaDeclarada: ordenSchema.shape.fallaDeclarada,
-    presupuesto: ordenSchema.shape.presupuesto,
-    esUrgente: ordenSchema.shape.esUrgente,
-    fechaPromesa: ordenSchema.shape.fechaPromesa,
-  }),
-  z.object({
-    clienteModo: z.literal("nuevo"),
-    nombre: clienteSchema.shape.nombre,
-    telefono: clienteSchema.shape.telefono,
-    email: clienteSchema.shape.email,
-    tipo: equipoSchema.shape.tipo,
-    tipoCustom: equipoSchema.shape.tipoCustom,
-    marca: equipoSchema.shape.marca,
-    modelo: equipoSchema.shape.modelo,
-    numeroSerie: equipoSchema.shape.numeroSerie,
-    claveDesbloqueo: equipoSchema.shape.claveDesbloqueo,
-    accesorios: equipoSchema.shape.accesorios,
-    fallaDeclarada: ordenSchema.shape.fallaDeclarada,
-    presupuesto: ordenSchema.shape.presupuesto,
-    esUrgente: ordenSchema.shape.esUrgente,
-    fechaPromesa: ordenSchema.shape.fechaPromesa,
-  }),
-]);
+export const ordenFormSchema = z
+  .discriminatedUnion("clienteModo", [
+    z.object({
+      clienteModo: z.literal("existente"),
+      clienteId: z.string().uuid("Seleccioná un cliente"),
+      tipo: equipoSchema.shape.tipo,
+      tipoCustom: equipoSchema.shape.tipoCustom,
+      marca: equipoSchema.shape.marca,
+      modelo: equipoSchema.shape.modelo,
+      numeroSerie: equipoSchema.shape.numeroSerie,
+      claveDesbloqueo: equipoSchema.shape.claveDesbloqueo,
+      accesorios: equipoSchema.shape.accesorios,
+      fallaDeclarada: ordenSchema.shape.fallaDeclarada,
+      presupuesto: ordenSchema.shape.presupuesto,
+      esUrgente: ordenSchema.shape.esUrgente,
+      fechaPromesa: ordenSchema.shape.fechaPromesa,
+    }),
+    z.object({
+      clienteModo: z.literal("nuevo"),
+      nombre: clienteSchema.shape.nombre,
+      telefono: clienteSchema.shape.telefono,
+      email: clienteSchema.shape.email,
+      tipo: equipoSchema.shape.tipo,
+      tipoCustom: equipoSchema.shape.tipoCustom,
+      marca: equipoSchema.shape.marca,
+      modelo: equipoSchema.shape.modelo,
+      numeroSerie: equipoSchema.shape.numeroSerie,
+      claveDesbloqueo: equipoSchema.shape.claveDesbloqueo,
+      accesorios: equipoSchema.shape.accesorios,
+      fallaDeclarada: ordenSchema.shape.fallaDeclarada,
+      presupuesto: ordenSchema.shape.presupuesto,
+      esUrgente: ordenSchema.shape.esUrgente,
+      fechaPromesa: ordenSchema.shape.fechaPromesa,
+    }),
+  ])
+  .refine(
+    (data) => {
+      if (data.tipo !== "otro") return true;
+      return (
+        typeof data.tipoCustom === "string" &&
+        data.tipoCustom.trim().length >= 2
+      );
+    },
+    {
+      message: "Especificá el tipo (mínimo 2 caracteres)",
+      path: ["tipoCustom"],
+    }
+  );
 
 export type OrdenFormInput = z.infer<typeof ordenFormSchema>;

@@ -115,6 +115,32 @@ export async function crearOrden(
     ? data.tipoCustom.trim().toLowerCase()
     : data.tipo;
 
+  // Safety net: si el cliente no validó (o el form se bypaseó),
+  // chequeamos que el tipoCustom no duplique uno existente.
+  if (data.tipo === "otro" && tipoFinal !== "otro") {
+    const TIPOS_BASE = new Set(["notebook", "smartphone", "tablet", "monitor"]);
+    if (TIPOS_BASE.has(tipoFinal)) {
+      return {
+        ok: false,
+        error: `El tipo "${tipoFinal}" ya existe como categoría base. Seleccionalo del desplegable.`,
+        fieldErrors: { tipo: `Tipo "${tipoFinal}" ya existe como base` },
+      };
+    }
+    // Verificar duplicado contra tipos custom existentes en la DB.
+    const { data: dupRows, error: dupError } = await supabase
+      .from("equipos")
+      .select("id")
+      .ilike("tipo", tipoFinal)
+      .limit(1);
+    if (!dupError && dupRows && dupRows.length > 0) {
+      return {
+        ok: false,
+        error: `El tipo "${tipoFinal}" ya existe. Seleccionalo del desplegable en lugar de crearlo de nuevo.`,
+        fieldErrors: { tipoCustom: `Ya existe "${tipoFinal}"` },
+      };
+    }
+  }
+
   const { data: equipo, error: equipoError } = await supabase
     .from("equipos")
     .insert({
