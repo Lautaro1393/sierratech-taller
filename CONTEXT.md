@@ -217,3 +217,18 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle.
 ---
 
 © 2026 Sierra Tech · Almagro, Buenos Aires.
+
+---
+
+## 11. Bugs pendientes (cosméticos)
+
+Detectados en testing E2E del deploy en producción (2026-09-08). No afectan funcionalidad core, anotados para cleanup futuro:
+
+1. **Encoding UTF-8 roto en importador VCF**: ~738 contactos importados tienen nombres con bytes mal interpretados (`Bicicleter�a Esp�ndol=`, `Art�culos para Fiestas=`, etc.). El parser VCF leyó UTF-8 como latin1 al guardar en DB. Fix: re-parsear el VCF original (`/tmp/contacts-lautaro.vcf`) con encoding correcto y hacer UPDATE de los nombres, o agregar flag `--encoding utf-8` al parser.
+2. **Dato de prueba sucio en OT-0011**: presupuesto cargado como `$ 11.111.111,00`. Claramente test manual. Fix: `UPDATE ordenes SET presupuesto = 18000 WHERE id = 'a735a452-7ea2-43eb-9f2e-d4ff36c94c33';` o cargar un valor realista.
+
+## 12. Deploy production
+
+**URL:** https://sierratech-taller.vercel.app
+
+**Última verificación:** 2026-09-08 — todas las rutas validadas, portal público funciona, QR genera, timer y viabilidad OK. Env vars y redirect URLs documentadas en `VERCEL_ENV_VARS.md` (eliminado 2026-09-08; valores en `.env.local` + Vercel Dashboard).

@@ -40,9 +40,6 @@ yarn-error.log*
 # vercel
 .vercel
 
-# Docs con secrets (rotar y regenerar si se commitea por error)
-VERCEL_ENV_VARS.md
-
 # typescript
 *.tsbuildinfo
 next-env.d.ts
