@@ -32,6 +32,7 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+!.env.example
 
 # opencode per-project config (puede tener tokens en el futuro)
 .opencode/

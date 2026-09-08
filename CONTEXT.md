@@ -1,7 +1,7 @@
 # SierraTech — Contexto de proyecto
 
 > Snapshot para que cualquier sesión nueva entienda el estado sin reconstruir historia.
-> Última actualización: 2026-09-03 (sesión vespertina).
+> Última actualización: 2026-09-07 (Fase 9 + planning de deploy).
 
 ## 1. La marca
 
@@ -25,48 +25,26 @@
 - Historial limpio: cada repo cuenta su propia historia.
 - Deploys independientes: push-to-main en cada uno, sin coordinación.
 
-**Ubicación local** (reorganización del 2026-09-03):
-
-```
-C:\Users\lauta\
-├── SierraTech-lab\          ← sitio estático
-└── sierratech-taller\       ← este repo (hermano, NO anidado)
-```
-
-> La carpeta `sierratech-taller/` está ignorada en `.gitignore` de `SierraTech-lab` para que no vuelva a aparecer como untracked si se anida por error.
-
 ## 3. Estado actual
 
 ### 3.1 `SierraTech-lab` (sitio)
 
 - v2 desplegada y funcionando en `https://lautaro1393.github.io/SierraTech-lab/`.
 - Roadmap v2 (`PLAN.md`) completo: 6 fases commiteadas.
-- Último commit: `541138b chore: ignore sierratech-taller/`.
 - Documentación viva: `README.md`, `spec.md`, `design.md`, `PLAN.md`.
 
 ### 3.2 `sierratech-taller` (este repo)
 
-- HEAD = `origin/main` = `5e9e723`. Working tree limpio. Sincronizado con GitHub.
-- Commits (top → bottom del log):
-  1. `a02e569` — Fase 1.1: Setup inicial (Next.js 16 + TS + Tailwind 4 + Supabase clients).
-  2. `b373ae9` — Fase 1.2: Login, Auth y Dashboard.
-  3. `8722780` — test git email config.
-  4. `95271a6` — fix sidebar layout (`pl-64` en lugar de `ml-64`).
-  5. `268ce49` — CONTEXT.md vivo + reemplazo README boilerplate.
-  6. **Fase 2** (7 commits: `0045214`…`8a04794`): proxy migrado, AuthProvider único, page.tsx default fuera, Header en dashboard, errores Supabase mapeados, Dashboard Server Component, placeholders para rutas pendientes, lucide-react + zod instalados.
-  7. **Fase 3** (4 commits: `ad887dc`…`29780cd`): server action `actualizarEstadoOrden` con historial, server component `/kanban` con fetch + joins, `KanbanBoard` con `@dnd-kit` (DndContext, 5 columnas, DragOverlay), cards con semáforo + WhatsApp + ver detalle.
-  8. `3852d68` — fix CSS: tokens custom `--spacing-*` → `--size-*` (rompía `max-w-*` en toda la app).
-  9. **Fase 4** (5 commits: `7659c30`…`5e9e723`): zod schemas, `crearOrden` server action, página `/ordenes/nueva`, `OrdenForm` + `ClienteAutocomplete` mobile-first, links "Nueva Orden" en Dashboard y Kanban. **Falta:** 4.3 (scanner QR) y 4.4 (upload fotos con compresión) — pendientes de definir storage.
-  10. `33c1df9` — docs: actualizar CONTEXT.md y SPEC-taller.md.
-  11. **Fase 7** (N commits, sin pushear aún): schema `app_settings` + `tiempo_sesiones`, server actions (start/pause/resume/stop), página `/settings`, `TemporizadorCard` con timer en vivo + costo + margen, indicador global en sidebar, auto-prompt al mover a `esperando_repuesto`, auto-stop al cerrar orden. **Migración SQL pendiente de aplicar en Supabase** (archivo: `supabase/migrations/2026-09-06-tiempo-control.sql`).
-- **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`). Schema completo aplicado (4 tablas, enum, RLS, indices, trigger). 3 clientes, 4 equipos, **7 órdenes** (la OT-0007 se creó en la prueba E2E de Fase 4 con cliente Lucía, equipo Acer Aspire 5), 3 entradas de historial. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
-- **Vercel**: proyecto recreado y linkeado a GitHub (`prj_ijMCD6lX6svfVk5tnovM97TNnrUz`, team `lautaro1393s-projects`). **Pendiente del user:** configurar env vars `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en Vercel Dashboard (Settings → Environment Variables) y verificar que dispare el primer deploy.
-- **MCPs configurados** en `opencode.json` per-project: Supabase (database+docs, project_ref `crjtucqucgxiqcnhpmgs`) y Vercel (remoto OAuth). El MCP de Vercel no lista el proyecto nuevo aún (bug de cache — necesita time o reauth).
-- **Fases 5–6 de `SPEC-taller.md` pendientes.**
+- **HEAD = `0fdec60`**. Working tree limpio. Sincronizado con GitHub.
+- **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`), schema completo aplicado: 4 tablas base + 2 de Fase 7 (`app_settings`, `tiempo_sesiones`), enums, RLS, índices, triggers. 3 clientes, 4+ equipos, 7+ órdenes, 3+ entradas de historial. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
+- **Vercel**: proyecto linkeado a GitHub. **Pendiente del user:** configurar env vars `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en Vercel Dashboard.
+- **Storage**: bucket `fotos-reparaciones` creado (privado, signed URLs). `SUPABASE_SERVICE_ROLE_KEY` no configurado en `.env.local` — el portal público no puede mostrar fotos hasta que se agregue.
+- **MCPs configurados**: Supabase (OAuth, database+docs), Vercel (OAuth), Chrome DevTools (local), gh_grep, stitch.
+- **Fases 5, 6, 8, 10 de `SPEC-taller.md` pendientes.**
 
 ## 4. Spec del taller (resumen ejecutivo)
 
-Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
+Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle.
 
 ### Propósito
 - **Backoffice interno** para Lautaro (técnico): speed > features, ≤3 clicks al Kanban desde el dashboard.
@@ -79,11 +57,13 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
 - Desktop-optimized para gestión (vista completa del tablero en monitores).
 - Offline-resilient: optimistic UI, sync cuando hay red.
 
-### Schema Supabase (4 tablas)
+### Schema Supabase (6 tablas)
 - `clientes` — nombre, teléfono, email.
 - `equipos` — tipo, marca, modelo, serie, clave, accesorios.
-- `ordenes` — estado, falla, diagnóstico, presupuesto, token público.
+- `ordenes` — estado, falla, diagnóstico, presupuesto, token público, tiempo_total_seg.
 - `historial_estados` — timeline con notas y fotos.
+- `app_settings` — tarifas y config (singleton, RLS admin).
+- `tiempo_sesiones` — sesiones de trabajo cronometradas.
 
 ### Estados del Kanban (enum)
 `ingresado` → `en_diagnostico` → `esperando_repuesto` → `en_reparacion` → `listo_para_retiro` → `entregado`. Más `cancelado`.
@@ -104,82 +84,130 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle. Resumen:
 - Tipografías: Space Grotesk (display) + Geist (body) + JetBrains Mono (mono/técnica).
 
 ### Stack técnico
-- Next.js 16.3.3 + React 19.2.8
+- Next.js 16.3.3 + React 19.2.8 + Turbopack
 - Tailwind CSS 4
-- `@supabase/ssr` 0.12.5 (Auth + DB)
+- `@supabase/ssr` 0.12.5 (Auth + DB) + `@supabase/supabase-js` (client)
 - `date-fns` 4.4.0
-- **Pendiente**: `@dnd-kit/core` (drag & drop del Kanban), `zod` (validación), `lucide-react` (iconos).
+- `@dnd-kit/core` (Kanban), `zod` (validación), `lucide-react` (iconos)
+- `qr-scanner` (cámara), `next.config.ts` con `experimental.serverActions.bodySizeLimit: "10mb"` + `allowedDevOrigins` para LAN
 
 ## 5. Fases del taller (estado)
 
 - [x] **Fase 1.1** — Setup Next.js + TS + Tailwind + clientes Supabase.
 - [x] **Fase 1.2** — Login + Auth + Dashboard.
-- [x] **Fase 2** — Auth refinada (errores Supabase mapeados) + Proxy (era Middleware, renombrado en Next 16) + Layout (sidebar + header renderizado) + Dashboard Server Component con stats reales desde Supabase.
-- [x] **Fase 3** — Kanban board: 5 columnas por estado, server component fetch con joins (orden + equipo + cliente), drag & drop con `@dnd-kit/core` (PointerSensor + DndContext + DragOverlay), tarjetas con semáforo, acciones rápidas (WhatsApp con mensaje por estado, ver detalle), server action `actualizarEstadoOrden` que crea entrada en `historial_estados`. Optimistic UI con rollback si falla.
-- [x] **Fase 4** — Formulario de ingreso (parcial): zod schemas, server action `crearOrden`, página `/ordenes/nueva`, `OrdenForm` + `ClienteAutocomplete` mobile-first, links en Dashboard y Kanban. **Falta:** 4.3 scanner QR, 4.4 upload fotos (requiere definir Supabase Storage bucket primero).
-- [x] **Fase 7** — Control de tiempo y viabilidad: schema `app_settings` + `tiempo_sesiones`, server actions (start/pause/resume/stop + cerrar huérfana + editar nota), página `/settings` con tarifa horaria configurable, `TemporizadorCard` en `/ordenes/[id]` con timer en vivo + costo a tarifa + margen vs presupuesto + lista de sesiones con notas editables, indicador global en sidebar (chip rojo con OT activa), auto-prompt en Kanban al pasar a `esperando_repuesto`, auto-stop al pasar a `entregado` o `cancelado`. Migración SQL en `supabase/migrations/2026-09-06-tiempo-control.sql` (pendiente de aplicar en Supabase).
-- [ ] **Fase 5** — Detalle de orden: ya tiene la base de la Fase 7; faltan notas y fotos al historial, editar presupuesto, cambio de estado rápido desde detalle.
-- [ ] **Fase 6** — Portal de tracking público: ruta `/tracking/[token]`, vista simplificada para cliente, QR de acceso.
+- [x] **Fase 2** — Auth refinada, Proxy, Layout, Dashboard Server Component.
+- [x] **Fase 3** — Kanban board con `@dnd-kit`, drag & drop, server action `actualizarEstadoOrden`.
+- [x] **Fase 4** — Formulario de ingreso completo: zod, `crearOrden`, `/ordenes/nueva`, `OrdenForm` + `ClienteAutocomplete` + scanner QR + upload fotos.
+- [x] **Fase 5** — Detalle de orden: cambio de estado, edición presupuesto, notas, historial, resumen de cierre.
+- [x] **Fase 6** — Portal de tracking público `/tracking/[token]` con QR.
+- [x] **Fase 7** — Control de tiempo + viabilidad financiera: `tiempo_sesiones`, `TemporizadorCard`, `/settings` con tarifa horaria, indicador global en sidebar, auto-prompt en Kanban.
+- [x] **Fase 9** — Listado de órdenes con búsqueda, filtros (estado + rango fechas), paginación. Audit encontró 5 bugs (parcheados en `49bd960`).
+- [ ] **Fase 8** — Reportes/PDF (no iniciada).
+- [ ] **Fase 10** — Tests E2E (no iniciada).
 
-## 6. Gotchas críticos
+## 6. Features completas por ruta
 
-1. **Next.js 16.3.3 rompe convenciones.** El `AGENTS.md` del proyecto lo advierte: APIs, convenciones y estructura de archivos pueden diferir de versiones anteriores. **Antes de escribir código nuevo, leer la doc local en `node_modules/next/dist/docs/`.** Verificar deprecation notices. Breaking changes ya encontrados: `middleware.ts` → `proxy.ts` (export `proxy`), `params` y `searchParams` ahora son `Promise<...>`.
-2. **Tailwind 4 + `@theme` namespace conflict.** El bloque `@theme` en `globals.css` NO debe usar `--spacing-*` para tokens custom (Tailwind 4 usa ese namespace para generar `max-w-*`, `w-*`, `h-*`, `p-*`, `gap-*`, etc.). Usar `--size-*` o cualquier otro prefijo no reservado. **Bug histórico**: el commit `3852d68` arregló un caso donde `--spacing-md: 16px` colapsaba `max-w-md` a 16px en toda la app.
-3. **Variables de entorno del taller.** `.env.local` con keys de Supabase (`NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`) — **NO se commitea** (cubierto por `.gitignore`). `.env.example` sí está versionado como template.
-4. **MCP Supabase instalado** en `opencode.json` (per-project, scope `crjtucqucgxiqcnhpmgs`, features `database,docs`). Sirve para ejecutar SQL y consultar docs desde la sesión. Auth via OAuth. Storage no habilitado (agregar cuando llegue Fase 4).
+- **`/login`** — login técnico con OAuth Supabase.
+- **`/`** — dashboard server component con stats reales, links rápidos a Kanban/Nueva Orden.
+- **`/kanban`** — 5 columnas por estado, drag & drop, semáforo por tiempo, acciones rápidas (WhatsApp + ver detalle).
+- **`/ordenes/nueva`** — formulario mobile-first con cliente autocomplete, tipo equipo custom con detección de duplicados (`fix(df437f9)`), scanner QR de serie, sticky desktop.
+- **`/ordenes/[id]`** — detalle completo: TemporizadorCard, edición presupuesto, cambio de estado, notas al historial, upload fotos, resumen de cierre.
+- **`/ordenes`** — listado con búsqueda (OT o falla), filtros estado/rango fechas, paginación (20/página).
+- **`/clientes`** — lista clickeable con importador de VCF/CSV (742 contactos de prueba parseados).
+- **`/clientes/[id]`** — detalle del cliente con sus equipos y órdenes.
+- **`/settings`** — tarifa horaria, mantenimiento de DB.
+- **`/tracking/[token]`** — portal público para cliente: estado actual, historial de cambios, fotos (requiere `SUPABASE_SERVICE_ROLE_KEY`).
 
-## 7. Convenciones de trabajo
+## 7. Bugs corregidos recientemente
+
+- `c578aa5` fixed-input click on desktop: `<input absolute inset-0 opacity-0>` pattern (no `sr-only`, no `display:none`).
+- `df437f9` tipos custom sin duplicados + sticky desktop en `/ordenes/nueva`.
+- `67e0642` items de `/clientes` ahora son links clickeables.
+- `49bd960` audit Fase 9: 5 bugs parcheados (comma injection, null equipo, debounce cleanup, cancelado en filtro, page validation).
+- `33cfad3` mobile: crypto.randomUUID fallback + Kanban touch improvements.
+
+## 8. Gotchas críticos
+
+1. **Next.js 16.3.3 rompe convenciones.** `AGENTS.md` lo advierte: leer `node_modules/next/dist/docs/` antes de escribir código nuevo. Breaking changes: `middleware.ts` → `proxy.ts` (export `proxy`), `params`/`searchParams` ahora son `Promise<...>` en server components, `searchParams` se lee con `await props.searchParams`.
+2. **Tailwind 4 + `@theme` namespace conflict.** NO usar `--spacing-*` para tokens custom (Tailwind 4 usa ese namespace para generar `max-w-*`, `w-*`, `h-*`, `p-*`, `gap-*`, etc.). Usar `--size-*` u otro prefijo no reservado.
+3. **File input pattern en Next 16 + React 19.** Para que el click funcione en desktop: `<input class="absolute inset-0 w-full h-full opacity-0 cursor-pointer">`. NO `sr-only` (`clip: rect` bloquea pointer events), NO `display: none`, NO `onClick` en div padre.
+4. **Variables de entorno del taller.** `.env.local` con keys de Supabase — NO se commitea (`.gitignore`). `.env.example` sí está versionado como template. Para Vercel: configurar env vars en Dashboard (Production + Preview + Development).
+5. **`SUPABASE_SERVICE_ROLE_KEY`**: requerido para que `/tracking/[token]` muestre fotos (signed URLs cross-auth). Sin él, el portal funciona pero sin thumbnails. AGREGAR a `.env.local` + Vercel env vars.
+6. **Server actions body size**: `next.config.ts` tiene `experimental.serverActions.bodySizeLimit: "10mb"` para uploads de fotos con compresión client-side.
+7. **`allowedDevOrigins`**: configurado en `next.config.ts` para acceder desde LAN (`http://192.168.x.x:3000`).
+8. **`globalThis` para timers**: NO usar en componentes React; usar `useRef` + cleanup `useEffect(() => () => clearTimeout(ref.current!), [])` para evitar memory leaks y stale callbacks.
+
+## 9. Convenciones de trabajo
 
 ### Working dir en opencode
 - Una sesión de opencode = un workspace root.
-- Para trabajar en el sitio: workspace = `C:\Users\lauta\SierraTech-lab`.
-- Para trabajar en el taller: workspace = `C:\Users\lauta\sierratech-taller`.
+- Para trabajar en el sitio: workspace = `~/SierraTech-lab`.
+- Para trabajar en el taller: workspace = este directorio.
 - Para comandos puntuales en el otro repo desde una sesión abierta, usar `workdir` en bash.
 
 ### Git
-- Ambos repos en `main`, push-to-deploy.
+- `main`, push-to-deploy.
 - Conventional commits (`feat:`, `fix:`, `chore:`, `docs:`, `refactor:`).
-- Mensajes en español o inglés consistente (preferir español, es el idioma del proyecto).
+- Mensajes en español o inglés consistente (preferir español).
 
-## 8. Próximos pasos sugeridos
+### gh CLI
+- Usar `env -u GITHUB_TOKEN -u GH_TOKEN gh ...` para bypass de tokens stale.
 
-### Inmediato (manuales, requieren browser del user)
-1. **Vercel Dashboard** → `sierratech-taller` → Settings → Environment Variables. Agregar:
-   - `NEXT_PUBLIC_SUPABASE_URL` (target: Production + Preview + Development)
+### MCPs
+- Chrome DevTools se desconecta si se mata el browser desde afuera (`pkill chrome`). Si pasa, reiniciar opencode.
+- Supabase MCP: tiene acceso completo a la DB via SQL (project_ref `crjtucqucgxiqcnhpmgs`).
+
+## 10. Plan de deploy
+
+### Pre-deploy checklist (manual, browser)
+
+1. **Vercel Dashboard** → proyecto `sierratech-taller` → Settings → Environment Variables. Agregar:
+   - `NEXT_PUBLIC_SUPABASE_URL` (Production + Preview + Development)
    - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (idem)
-2. Verificar que dispare el primer deploy (debería ser automático al pushear a main). Si falla, abrir el build log y pegar acá.
-3. **Aplicar migración SQL de Fase 7** en Supabase Dashboard → SQL Editor → New query → pegar el contenido de `supabase/migrations/2026-09-06-tiempo-control.sql` → Run. Crea las tablas `app_settings`, `tiempo_sesiones`, agrega `ordenes.tiempo_total_seg`, trigger de mantenimiento, y RLS.
-4. **Bug pre-existente** detectado pero NO arreglado: el sidebar fixed de 256px se superpone al contenido en mobile (390px). Es del `(dashboard)/layout.tsx` de Fase 1.2. Fix mínimo: `pl-0 md:pl-64` en el `<main>`. Fix ideal: sidebar off-canvas con hamburger en mobile.
+   - `SUPABASE_SERVICE_ROLE_KEY` (Production + Preview + Development) — para que el portal muestre fotos
+2. Verificar que dispare el primer deploy (auto en push a main). Si falla, revisar build log en Vercel.
+3. **Supabase Dashboard** → Authentication → URL Configuration → agregar el dominio de Vercel a "Redirect URLs" (ej: `https://sierratech-taller.vercel.app/auth/callback`).
+4. **Supabase Dashboard** → Storage → bucket `fotos-reparaciones` → verificar policies (debería permitir uploads autenticados y reads via signed URLs).
 
-### Corto plazo (Fase 4 — completar)
-1. Definir Supabase Storage: crear bucket `fotos` (público, con policy de upload autenticado).
-2. 4.4 Upload de fotos con compresión client-side (canvas resize antes de subir).
-3. 4.3 Scanner QR de serie (librería `qr-scanner` o similar).
+### Post-deploy smoke test
 
-### Mediano plazo (Fase 5)
-1. Pantalla `/ordenes/[id]` con timeline del historial (ya hay datos de prueba).
-2. Editor de presupuesto, switch de urgencia.
-3. Cambio de estado rápido (chips o dropdown).
-4. Acciones: editar nota, agregar foto, marcar como entregado/cancelado.
+1. Login con `dev@sierratech.com.ar` / `dev123456`.
+2. Navegar Dashboard, Kanban, /ordenes, /clientes, /settings.
+3. Crear una orden nueva desde `/ordenes/nueva`.
+4. Abrir `/tracking/[token]` en ventana incógnito (sin auth).
+5. Verificar que las fotos de la orden se vean en el portal (requiere `SUPABASE_SERVICE_ROLE_KEY`).
 
-### Mediano plazo (Fase 6)
-1. Portal `/tracking/[token]` con vista simplificada para cliente.
-2. QR de acceso generado por la app (o link compartible).
-3. Mejorar la policy de RLS para que el `public_token` sea accesible sin auth (la del schema actual tiene un bug en `current_setting`).
+### Dominio custom
 
-## 9. Referencias cruzadas
+- Comprar dominio (ej: `taller.sierratech.lab`) en Vercel.
+- Configurar DNS (CNAME a `cname.vercel-dns.com`).
+- Agregar a Vercel → Domains.
+- Actualizar Supabase redirect URLs.
+
+## 11. Próximas features pendientes
+
+### Corto plazo
+- **Fase 8** — Reportes/PDF: exportar orden a PDF para imprimir/entregar al cliente.
+- **Fase 10** — Tests E2E con Playwright.
+
+### Mejoras sugeridas (del testing manual)
+- Paginación en `/clientes` (ahora lista todo).
+- Búsqueda por cliente en `/ordenes` (no solo OT/falla).
+- Filtros persistentes en URL (ya hecho en `/ordenes`, hacer en `/clientes`).
+
+## 12. Referencias cruzadas
 
 ### Dentro de este repo
 - [`SPEC-taller.md`](./SPEC-taller.md) — especificación funcional completa (modelo de datos, design system, fases).
 - [`AGENTS.md`](./AGENTS.md) — advertencia sobre Next.js 16.
-- [`supabase-schema.sql`](./supabase-schema.sql) — DDL para correr en Supabase.
+- [`supabase-schema.sql`](./supabase-schema.sql) — DDL completo.
+- [`testing.md`](./testing.md) — reporte de testing manual E2E (11 secciones).
 
 ### Sitio público (repo hermano)
-- [`../SierraTech-lab/README.md`](../SierraTech-lab/README.md) — overview del sitio.
-- [`../SierraTech-lab/PLAN.md`](../SierraTech-lab/PLAN.md) — roadmap v2 (cerrado).
-- [`../SierraTech-lab/design.md`](../SierraTech-lab/design.md) — design system del sitio (alinear con tokens del taller).
+- [`SierraTech-lab/README.md`](https://github.com/Lautaro1393/SierraTech-lab#readme)
+- [`SierraTech-lab/PLAN.md`](https://github.com/Lautaro1393/SierraTech-lab/blob/main/PLAN.md)
 
-## 10. Contacto y brand
+## 13. Contacto y brand
 
 - WhatsApp: [+54 9 11 7826-7986](https://wa.me/5491178267986)
 - Email: contacto@sierratech.lab
