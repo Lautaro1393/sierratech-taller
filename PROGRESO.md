@@ -84,4 +84,4 @@
 
 ## Último commit
 
-- (completar tras push: partes 1-2 implementadas + `PROGRESO.md`).
+- `fb4481f` — Partes 1-2 implementadas + `PROGRESO.md` (pusheado a `origin/main`).
