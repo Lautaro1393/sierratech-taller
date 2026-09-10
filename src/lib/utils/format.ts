@@ -37,3 +37,14 @@ export function formatCurrency(monto: number): string {
     currency: "ARS",
   }).format(monto);
 }
+
+export function formatWhatsAppDisplay(numero: string): string {
+  const d = numero.replace(/\D/g, "");
+  if (d.startsWith("549") && d.length >= 12) {
+    return `+54 9 ${d.slice(3, 5)} ${d.slice(5, 9)}-${d.slice(9, 13)}`;
+  }
+  if (d.length >= 10) {
+    return `+${d.slice(0, 2)} ${d.slice(2, 4)} ${d.slice(4, 8)}-${d.slice(8, 12)}`;
+  }
+  return d;
+}

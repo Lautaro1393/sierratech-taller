@@ -1,7 +1,7 @@
 # SierraTech — Contexto de proyecto
 
 > Snapshot para que cualquier sesión nueva entienda el estado sin reconstruir historia.
-> Última actualización: 2026-09-08 (deploy production + testing E2E).
+> Última actualización: 2026-09-10 (Partes 1-2 de `cambios y fixes.md`).
 
 ## 1. La marca
 
@@ -35,7 +35,7 @@
 
 ### 3.2 `sierratech-taller` (este repo)
 
-- **HEAD = `83d7a63`**. Working tree limpio. Sincronizado con GitHub.
+- **En curso: `cambios y fixes.md`** — **Partes 1 y 2 implementadas** (configuraciones generales + shortcuts/command palette). Avance detallado y resto de las partes en [`PROGRESO.md`](./PROGRESO.md).
 - **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`), schema completo aplicado: 4 tablas base + 2 de Fase 7 (`app_settings`, `tiempo_sesiones`), enums, RLS, índices, triggers. **738 clientes importados** de VCF + equipos/órdenes reales de prueba. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
 - **Vercel**: proyecto linkeado a GitHub, **en producción** → `https://sierratech-taller.vercel.app`. 3 env vars configuradas en Dashboard (Production + Preview + Development) + redirect URLs en Supabase.
 - **Storage**: bucket `fotos-reparaciones` (privado, signed URLs). `SUPABASE_SERVICE_ROLE_KEY` configurado en `.env.local` y Vercel — el portal público muestra fotos.

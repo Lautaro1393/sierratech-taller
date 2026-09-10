@@ -4,14 +4,20 @@ import { useState } from "react";
 import { useAuth } from "@/components/auth-provider";
 import { Header } from "@/components/layout/header";
 import { Sidebar } from "@/components/layout/sidebar";
-import type { SesionActivaGlobal } from "@/types";
+import { CommandPaletteProvider } from "@/components/layout/command-palette";
+import type { SesionActivaGlobal, Shortcuts } from "@/types";
 
 interface DashboardShellProps {
   children: React.ReactNode;
   sesionActiva: SesionActivaGlobal | null;
+  shortcuts: Shortcuts;
 }
 
-export function DashboardShell({ children, sesionActiva }: DashboardShellProps) {
+export function DashboardShell({
+  children,
+  sesionActiva,
+  shortcuts,
+}: DashboardShellProps) {
   const { loading } = useAuth();
   const [sidebarOpen, setSidebarOpen] = useState(false);
 
@@ -28,17 +34,19 @@ export function DashboardShell({ children, sesionActiva }: DashboardShellProps) 
 
   return (
     <div className="min-h-screen bg-surface-base">
-      <Sidebar
-        sesionActiva={sesionActiva}
-        open={sidebarOpen}
-        onClose={() => setSidebarOpen(false)}
-      />
-      <main className="md:pl-64 min-h-screen">
-        <Header onMenuClick={() => setSidebarOpen(true)} />
-        <div className="p-4 md:p-6">
-          {children}
-        </div>
-      </main>
+      <CommandPaletteProvider shortcuts={shortcuts}>
+        <Sidebar
+          sesionActiva={sesionActiva}
+          open={sidebarOpen}
+          onClose={() => setSidebarOpen(false)}
+        />
+        <main className="md:pl-64 min-h-screen">
+          <Header onMenuClick={() => setSidebarOpen(true)} />
+          <div className="p-4 md:p-6">
+            {children}
+          </div>
+        </main>
+      </CommandPaletteProvider>
     </div>
   );
 }

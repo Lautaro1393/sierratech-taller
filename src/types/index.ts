@@ -19,6 +19,24 @@ export interface ViabilityConfig {
   umbralRojoPct: number;
 }
 
+export interface Shortcuts {
+  palette: string;
+  nuevaOrden: string;
+}
+
+export interface ConfiguracionGeneral {
+  costoFijoMensualArs: number;
+  whatsappTaller: string;
+  shortcuts: Shortcuts;
+}
+
+export const DEFAULT_COSTO_FIJO_MENSUAL_ARS = 1700000;
+export const DEFAULT_WHATSAPP_TALLER = "5491178267986";
+export const DEFAULT_SHORTCUTS: Shortcuts = {
+  palette: "mod+k",
+  nuevaOrden: "mod+n",
+};
+
 export interface ViabilityResult {
   horasConsumidas: number;
   horasConsumidasFormateadas: string;

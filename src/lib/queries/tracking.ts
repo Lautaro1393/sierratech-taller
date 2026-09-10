@@ -1,4 +1,5 @@
 import { createServerClient } from "@/lib/supabase";
+import { DEFAULT_WHATSAPP_TALLER } from "@/types";
 
 export interface OrdenPublica {
   id: string;
@@ -46,4 +47,12 @@ export async function getHistorialPublicoByToken(
   );
   if (error) return [];
   return (data as HistorialPublicoItem[]) ?? [];
+}
+
+export async function getWhatsAppTallerPublico(): Promise<string> {
+  const supabase = await createServerClient();
+  const { data, error } = await supabase.rpc("get_whatsapp_taller").maybeSingle();
+  if (error || typeof data !== "string") return DEFAULT_WHATSAPP_TALLER;
+  const d = data.trim();
+  return /^\d{8,15}$/.test(d) ? d : DEFAULT_WHATSAPP_TALLER;
 }

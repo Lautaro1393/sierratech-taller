@@ -2,10 +2,11 @@ import Link from "next/link";
 import {
   getOrdenPublicaByToken,
   getHistorialPublicoByToken,
+  getWhatsAppTallerPublico,
 } from "@/lib/queries/tracking";
 import { getSignedUrlsPublic } from "@/lib/supabase/storage";
 import { ESTADO_LABELS, type EstadoOrden } from "@/types";
-import { formatFecha, formatFechaHora } from "@/lib/utils";
+import { formatFecha, formatFechaHora, formatWhatsAppDisplay } from "@/lib/utils";
 
 const ESTADO_PUBLIC_LABELS: Record<EstadoOrden, { titulo: string; subtitulo: string }> = {
   ingresado: {
@@ -59,6 +60,8 @@ export default async function TrackingPage({
     getOrdenPublicaByToken(token),
     getHistorialPublicoByToken(token),
   ]);
+
+  const whatsappTaller = await getWhatsAppTallerPublico();
 
   // Generar signed URLs para las fotos del historial (requiere service_role)
   const allFotoPaths = Array.from(
@@ -270,12 +273,12 @@ export default async function TrackingPage({
           <p className="text-xs text-ink-muted">
             ¿Tenés dudas? Escribinos por WhatsApp al{" "}
             <a
-              href={`https://wa.me/5491178267986?text=${encodeURIComponent(`Hola! Tengo una consulta sobre mi equipo (OT-${orden.numero_ot.toString().padStart(4, "0")})`)}`}
+              href={`https://wa.me/${whatsappTaller}?text=${encodeURIComponent(`Hola! Tengo una consulta sobre mi equipo (OT-${orden.numero_ot.toString().padStart(4, "0")})`)}`}
               target="_blank"
               rel="noopener noreferrer"
               className="text-accent hover:underline"
             >
-              +54 9 11 7826-7986
+              {formatWhatsAppDisplay(whatsappTaller)}
             </a>
           </p>
           <p className="text-xs text-ink-muted">

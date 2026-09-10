@@ -2,8 +2,10 @@
 
 import { usePathname } from "next/navigation";
 import Link from "next/link";
-import { Menu } from "lucide-react";
+import { Menu, Search } from "lucide-react";
 import { useAuth } from "@/components/auth-provider";
+import { useCommandPalette } from "@/components/layout/command-palette";
+import { formatShortcut } from "@/lib/utils";
 
 const routeNames: Record<string, string> = {
   "/": "Dashboard",
@@ -20,6 +22,7 @@ interface HeaderProps {
 export function Header({ onMenuClick }: HeaderProps) {
   const pathname = usePathname();
   const { user } = useAuth();
+  const { toggle, shortcuts } = useCommandPalette();
 
   const routeName = routeNames[pathname] || "SierraTech Taller";
 
@@ -45,6 +48,19 @@ export function Header({ onMenuClick }: HeaderProps) {
         </div>
 
         <div className="flex items-center gap-3">
+          <button
+            type="button"
+            onClick={toggle}
+            className="flex items-center gap-2 p-2 md:px-2.5 md:py-1.5 -mr-2 md:mr-0 rounded-lg text-sm text-ink-muted hover:text-ink-primary hover:bg-surface-hover transition-colors"
+            title="Buscar órdenes o abrir el buscador rápido"
+            aria-label="Buscar"
+          >
+            <Search className="w-4 h-4" />
+            <span className="hidden lg:inline text-xs">Buscar</span>
+            <kbd className="hidden sm:inline-block px-1.5 py-0.5 rounded border border-white/10 bg-surface-hover text-[10px] font-mono">
+              {formatShortcut(shortcuts.palette)}
+            </kbd>
+          </button>
           <div className="text-right hidden sm:block">
             <p className="text-sm font-medium text-ink-primary">
               {user?.email?.split("@")[0] || "Técnico"}

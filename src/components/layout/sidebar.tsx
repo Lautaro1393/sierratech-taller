@@ -3,7 +3,10 @@
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
+import { Search, Keyboard } from "lucide-react";
 import { TimerIndicator } from "./timer-indicator";
+import { useCommandPalette } from "@/components/layout/command-palette";
+import { formatShortcut } from "@/lib/utils";
 import type { SesionActivaGlobal } from "@/types";
 
 const navItems = [
@@ -54,6 +57,7 @@ interface SidebarProps {
 export function Sidebar({ sesionActiva, open, onClose }: SidebarProps) {
   const pathname = usePathname();
   const [collapsed, setCollapsed] = useState(false);
+  const { toggle, shortcuts } = useCommandPalette();
 
   return (
     <>
@@ -124,6 +128,23 @@ export function Sidebar({ sesionActiva, open, onClose }: SidebarProps) {
           </nav>
 
           <div className="border-t border-white/5">
+            {!collapsed && (
+              <button
+                type="button"
+                onClick={toggle}
+                className="hidden md:flex w-full items-center gap-3 px-5 py-3 text-sm text-ink-muted hover:bg-surface-hover hover:text-ink-secondary transition-colors"
+                title={`Buscar órdenes (${formatShortcut(shortcuts.palette)})`}
+              >
+                <Search className="w-4 h-4" />
+                <span className="flex-1 text-left font-medium">Buscar</span>
+                <span className="flex items-center gap-1">
+                  <Keyboard className="w-3.5 h-3.5 opacity-70" />
+                  <kbd className="px-1.5 py-0.5 rounded border border-white/10 bg-surface-hover text-[10px] font-mono">
+                    {formatShortcut(shortcuts.palette)}
+                  </kbd>
+                </span>
+              </button>
+            )}
             {!collapsed && <TimerIndicator sesionActiva={sesionActiva} />}
             {collapsed && sesionActiva && (
               <div className="p-2">
