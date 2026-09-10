@@ -24,7 +24,7 @@ Sistema de gestión de taller de electrónica/software con doble propósito:
 ## 2. Arquitectura del Proyecto
 
 ```
-sierratech-taller/                      # Next.js 15 + TypeScript
+sierratech-taller/                      # Next.js 16 + TypeScript
 ├── src/
 │   ├── app/                            # App Router
 │   │   ├── (auth)/                    # Grupo de rutas autenticadas
@@ -36,10 +36,12 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 │   │   │   ├── kanban/page.tsx       # Tablero Kanban
 │   │   │   ├── ordenes/
 │   │   │   │   ├── page.tsx
+│   │   │   │   ├── nueva/page.tsx
 │   │   │   │   └── [id]/page.tsx
-│   │   │   └── clientes/
-│   │   │       ├── page.tsx
-│   │   │       └── [id]/page.tsx
+│   │   │   ├── clientes/
+│   │   │   │   ├── page.tsx
+│   │   │   │   └── [id]/page.tsx
+│   │   │   └── settings/page.tsx
 │   │   ├── tracking/
 │   │   │   └── [token]/page.tsx      # Portal público
 │   │   ├── layout.tsx
@@ -66,7 +68,7 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 
 ## 3. Schema de Base de Datos
 
-### Tablas Principales
+### Tablas Base (6 en total)
 
 | Tabla | Descripción |
 |-------|-------------|
@@ -74,6 +76,8 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 | `equipos` | Tipo, marca, modelo, serie, clave, accesorios |
 | `ordenes` | Estado, falla, diagnóstico, presupuesto, token público |
 | `historial_estados` | Timeline con notas y fotos |
+| `app_settings` | Tarifas y config global (Fase 7, sección abajo) |
+| `tiempo_sesiones` | Sesiones de trabajo cronometradas (Fase 7, sección abajo) |
 
 ### Estados del Kanban (enum)
 1. `ingresado` - Equipo recibido
@@ -125,12 +129,12 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 ## 5. Fases de Implementación
 
 ### Fase 1: Setup y Configuración ✅
-- [x] 1.1.1 Proyecto Next.js 15 + TypeScript + Tailwind
+- [x] 1.1.1 Proyecto Next.js 16 + TypeScript + Tailwind
 - [x] 1.1.2 Tokens de diseño en Tailwind config
 - [x] 1.1.3 Componentes UI base
 - [x] 1.1.4 Clientes Supabase (browser + server)
 - [x] 1.1.5 Schema SQL para ejecutar en Supabase
-- [ ] 1.1.6 Commit y push
+- [x] 1.1.6 Commit y push
 
 ### Fase 2: Auth y Layout
 - [x] 2.1 Login con Supabase Auth
@@ -144,10 +148,10 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 - [x] 3.3 Drag & drop entre columnas
 - [x] 3.4 Acciones rápidas (WhatsApp, ver detalle)
 
-### Fase 4: Formulario de Ingreso
-- [ ] 4.1 Autocomplete de clientes
-- [ ] 4.2 Selector de equipo
-- [ ] 4.3 Scanner QR de série
+### Fase 4: Formulario de Ingreso ✅
+- [x] 4.1 Autocomplete de clientes
+- [x] 4.2 Selector de equipo
+- [x] 4.3 Scanner QR de série
 - [x] 4.4 Upload de fotos con compresión (WebP 1600px q0.8, max 3 fotos × 5MB por subida, bucket privado + signed URLs)
 
 ### Fase 5: Detalle de Orden ✅
@@ -159,7 +163,7 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 - [x] 5.6 Auto-stop de timer al cerrar orden (validado E2E)
 
 #### Pendientes para Fase 5+
-- Fotos en historial (requiere Supabase Storage bucket)
+- ✅ Fotos en historial — resuelto: bucket `fotos-reparaciones` (privado) + signed URLs vía `SUPABASE_SERVICE_ROLE_KEY`
 
 ### Fase 6: Portal de Tracking ✅
 - [x] 6.1 Ruta pública `/tracking/[token]` (excluida del proxy de auth)
@@ -218,9 +222,12 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 - `/login` - Login del técnico
 - `/` - Dashboard
 - `/kanban` - Tablero Kanban
-- `/ordenes` - Lista de órdenes
+- `/ordenes` - Lista de órdenes (búsqueda, filtros, paginación)
+- `/ordenes/nueva` - Formulario de ingreso
 - `/ordenes/[id]` - Detalle de orden
 - `/clientes` - Gestión de clientes
+- `/clientes/[id]` - Detalle de cliente con equipos y órdenes
+- `/settings` - Tarifa horaria y config
 - `/tracking/[token]` - Portal público
 
 ### Componentes Utilizados
@@ -234,7 +241,7 @@ sierratech-taller/                      # Next.js 15 + TypeScript
 
 | Decisión | Valor |
 |----------|-------|
-| Stack | Next.js 15 + TypeScript |
+| Stack | Next.js 16 + TypeScript |
 | CSS | Tailwind CSS 4 |
 | Backend | Supabase (PostgreSQL + Auth + Storage) |
 | Drag & Drop | @dnd-kit/core |

@@ -30,6 +30,7 @@ Copiar `.env.example` a `.env.local` y completar:
 
 - `NEXT_PUBLIC_SUPABASE_URL`
 - `NEXT_PUBLIC_SUPABASE_ANON_KEY`
+- `SUPABASE_SERVICE_ROLE_KEY` — server-only; si falta, el portal de tracking no muestra fotos. No exponer en el cliente.
 
 `.env.local` no se commitea (cubierto por `.gitignore`).
 

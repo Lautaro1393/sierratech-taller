@@ -1,7 +1,7 @@
 # SierraTech — Contexto de proyecto
 
 > Snapshot para que cualquier sesión nueva entienda el estado sin reconstruir historia.
-> Última actualización: 2026-09-07 (Fase 9 + planning de deploy).
+> Última actualización: 2026-09-08 (deploy production + testing E2E).
 
 ## 1. La marca
 
@@ -35,12 +35,12 @@
 
 ### 3.2 `sierratech-taller` (este repo)
 
-- **HEAD = `0fdec60`**. Working tree limpio. Sincronizado con GitHub.
-- **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`), schema completo aplicado: 4 tablas base + 2 de Fase 7 (`app_settings`, `tiempo_sesiones`), enums, RLS, índices, triggers. 3 clientes, 4+ equipos, 7+ órdenes, 3+ entradas de historial. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
-- **Vercel**: proyecto linkeado a GitHub. **Pendiente del user:** configurar env vars `NEXT_PUBLIC_SUPABASE_URL` y `NEXT_PUBLIC_SUPABASE_ANON_KEY` en Vercel Dashboard.
-- **Storage**: bucket `fotos-reparaciones` creado (privado, signed URLs). `SUPABASE_SERVICE_ROLE_KEY` no configurado en `.env.local` — el portal público no puede mostrar fotos hasta que se agregue.
+- **HEAD = `83d7a63`**. Working tree limpio. Sincronizado con GitHub.
+- **DB Supabase activa** (`crjtucqucgxiqcnhpmgs`), schema completo aplicado: 4 tablas base + 2 de Fase 7 (`app_settings`, `tiempo_sesiones`), enums, RLS, índices, triggers. **738 clientes importados** de VCF + equipos/órdenes reales de prueba. **User dev:** `dev@sierratech.com.ar` / `dev123456`.
+- **Vercel**: proyecto linkeado a GitHub, **en producción** → `https://sierratech-taller.vercel.app`. 3 env vars configuradas en Dashboard (Production + Preview + Development) + redirect URLs en Supabase.
+- **Storage**: bucket `fotos-reparaciones` (privado, signed URLs). `SUPABASE_SERVICE_ROLE_KEY` configurado en `.env.local` y Vercel — el portal público muestra fotos.
 - **MCPs configurados**: Supabase (OAuth, database+docs), Vercel (OAuth), Chrome DevTools (local), gh_grep, stitch.
-- **Fases 5, 6, 8, 10 de `SPEC-taller.md` pendientes.**
+- **Fases 8 y 10 de `SPEC-taller.md` pendientes (5 y 6 completadas).**
 
 ## 4. Spec del taller (resumen ejecutivo)
 
@@ -113,7 +113,7 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle.
 - **`/ordenes/nueva`** — formulario mobile-first con cliente autocomplete, tipo equipo custom con detección de duplicados (`fix(df437f9)`), scanner QR de serie, sticky desktop.
 - **`/ordenes/[id]`** — detalle completo: TemporizadorCard, edición presupuesto, cambio de estado, notas al historial, upload fotos, resumen de cierre.
 - **`/ordenes`** — listado con búsqueda (OT o falla), filtros estado/rango fechas, paginación (20/página).
-- **`/clientes`** — lista clickeable con importador de VCF/CSV (742 contactos de prueba parseados).
+- **`/clientes`** — lista clickeable con importador de VCF/CSV (738 contactos importados).
 - **`/clientes/[id]`** — detalle del cliente con sus equipos y órdenes.
 - **`/settings`** — tarifa horaria, mantenimiento de DB.
 - **`/tracking/[token]`** — portal público para cliente: estado actual, historial de cambios, fotos (requiere `SUPABASE_SERVICE_ROLE_KEY`).
@@ -157,32 +157,20 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle.
 - Chrome DevTools se desconecta si se mata el browser desde afuera (`pkill chrome`). Si pasa, reiniciar opencode.
 - Supabase MCP: tiene acceso completo a la DB via SQL (project_ref `crjtucqucgxiqcnhpmgs`).
 
-## 10. Plan de deploy
+## 10. Deploy (completado 2026-09-08)
 
-### Pre-deploy checklist (manual, browser)
+**URL producción:** https://sierratech-taller.vercel.app
 
-1. **Vercel Dashboard** → proyecto `sierratech-taller` → Settings → Environment Variables. Agregar:
-   - `NEXT_PUBLIC_SUPABASE_URL` (Production + Preview + Development)
-   - `NEXT_PUBLIC_SUPABASE_ANON_KEY` (idem)
-   - `SUPABASE_SERVICE_ROLE_KEY` (Production + Preview + Development) — para que el portal muestre fotos
-2. Verificar que dispare el primer deploy (auto en push a main). Si falla, revisar build log en Vercel.
-3. **Supabase Dashboard** → Authentication → URL Configuration → agregar el dominio de Vercel a "Redirect URLs" (ej: `https://sierratech-taller.vercel.app/auth/callback`).
-4. **Supabase Dashboard** → Storage → bucket `fotos-reparaciones` → verificar policies (debería permitir uploads autenticados y reads via signed URLs).
+### Checklist ejecutado ✅
 
-### Post-deploy smoke test
+1. **Vercel Dashboard** — env vars configuradas (Production + Preview + Development): `NEXT_PUBLIC_SUPABASE_URL`, `NEXT_PUBLIC_SUPABASE_ANON_KEY`, `SUPABASE_SERVICE_ROLE_KEY`.
+2. **Build**: primer deploy exitoso (push a `main` dispara auto).
+3. **Supabase** — Authentication → Redirect URLs: agregadas las URLs de producción + previews del dominio Vercel.
+4. **Smoke test post-deploy**: todas las rutas validadas (login, dashboard, kanban, `/ordenes`, `/clientes`, `/settings`, `/ordenes/nueva`, `/ordenes/[id]`, `/tracking/[token]`).
 
-1. Login con `dev@sierratech.com.ar` / `dev123456`.
-2. Navegar Dashboard, Kanban, /ordenes, /clientes, /settings.
-3. Crear una orden nueva desde `/ordenes/nueva`.
-4. Abrir `/tracking/[token]` en ventana incógnito (sin auth).
-5. Verificar que las fotos de la orden se vean en el portal (requiere `SUPABASE_SERVICE_ROLE_KEY`).
+### Pendiente opcional
 
-### Dominio custom
-
-- Comprar dominio (ej: `taller.sierratech.lab`) en Vercel.
-- Configurar DNS (CNAME a `cname.vercel-dns.com`).
-- Agregar a Vercel → Domains.
-- Actualizar Supabase redirect URLs.
+- **Dominio custom** (ej: `taller.sierratech.lab`): comprar en Vercel → DNS (CNAME `cname.vercel-dns.com`) → agregar a Domains → actualizar redirect URLs en Supabase.
 
 ## 11. Próximas features pendientes
 
@@ -220,15 +208,9 @@ Ver [`SPEC-taller.md`](./SPEC-taller.md) para el detalle.
 
 ---
 
-## 11. Bugs pendientes (cosméticos)
+## 14. Bugs pendientes (cosméticos)
 
 Detectados en testing E2E del deploy en producción (2026-09-08). No afectan funcionalidad core, anotados para cleanup futuro:
 
 1. **Encoding UTF-8 roto en importador VCF**: ~738 contactos importados tienen nombres con bytes mal interpretados (`Bicicleter�a Esp�ndol=`, `Art�culos para Fiestas=`, etc.). El parser VCF leyó UTF-8 como latin1 al guardar en DB. Fix: re-parsear el VCF original (`/tmp/contacts-lautaro.vcf`) con encoding correcto y hacer UPDATE de los nombres, o agregar flag `--encoding utf-8` al parser.
 2. **Dato de prueba sucio en OT-0011**: presupuesto cargado como `$ 11.111.111,00`. Claramente test manual. Fix: `UPDATE ordenes SET presupuesto = 18000 WHERE id = 'a735a452-7ea2-43eb-9f2e-d4ff36c94c33';` o cargar un valor realista.
-
-## 12. Deploy production
-
-**URL:** https://sierratech-taller.vercel.app
-
-**Última verificación:** 2026-09-08 — todas las rutas validadas, portal público funciona, QR genera, timer y viabilidad OK. Env vars y redirect URLs documentadas en `VERCEL_ENV_VARS.md` (eliminado 2026-09-08; valores en `.env.local` + Vercel Dashboard).
