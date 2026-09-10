@@ -19,6 +19,8 @@ export default async function OrdenesPage(props: PageProps) {
   const result = await fetchOrdenes({
     search: sp.search,
     estado: sp.estado,
+    urgente: sp.urgente === "1",
+    proceso: sp.proceso === "1",
     desde: sp.desde,
     hasta: sp.hasta,
     page: sp.page ? Number(sp.page) : 1,

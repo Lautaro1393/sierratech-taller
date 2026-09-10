@@ -33,10 +33,28 @@ export interface OrdenesQueryResult {
 export interface OrdenesFilters {
   search?: string;
   estado?: string;
+  urgente?: boolean;
+  proceso?: boolean;
   desde?: string;
   hasta?: string;
   page?: number;
   pageSize?: number;
+}
+
+interface EquipoConCliente {
+  id: string;
+}
+
+const MAX_CLIENTE_EQUIPOS = 100;
+
+const ESTADOS_EN_PROCESO: EstadoOrden[] = [
+  "en_diagnostico",
+  "esperando_repuesto",
+  "en_reparacion",
+];
+
+function sanitizeSearch(s: string): string {
+  return s.replace(/[,()]/g, "").trim();
 }
 
 export async function fetchOrdenes(
@@ -48,6 +66,29 @@ export async function fetchOrdenes(
   const from = (page - 1) * pageSize;
   const to = from + pageSize - 1;
 
+  const search = filters.search ? sanitizeSearch(filters.search) : "";
+
+  const ors: string[] = [];
+  if (search.length > 0) {
+    const num = /^\d+$/.test(search) ? Number(search) : null;
+    if (num !== null) ors.push(`numero_ot.eq.${num}`);
+    ors.push(`falla_declarada.ilike.%${search}%`);
+    ors.push(`f_m.not.is.null`, `f_mo.not.is.null`);
+
+    const { data: clientesMatch } = await supabase
+      .from("equipos")
+      .select("id, cliente:clientes!inner(nombre)")
+      .ilike("cliente.nombre", `%${search}%`)
+      .limit(MAX_CLIENTE_EQUIPOS);
+
+    const equipoIds = ((clientesMatch ?? []) as EquipoConCliente[])
+      .map((e) => e.id)
+      .filter(Boolean);
+    if (equipoIds.length > 0) {
+      ors.push(`equipo_id.in.(${equipoIds.join(",")})`);
+    }
+  }
+
   let query = supabase
     .from("ordenes")
     .select(
@@ -57,26 +98,29 @@ export async function fetchOrdenes(
       equipo:equipos(
         marca, modelo, tipo,
         cliente:clientes(nombre, telefono)
-      )
+      ),
+      f_m:equipos(), f_mo:equipos()
     `,
       { count: "exact" }
     );
 
-  if (filters.search) {
-    const safe = filters.search.replace(/[,()]/g, "");
-    const s = `%${safe}%`;
-    const num = Number(safe);
-    if (!isNaN(num) && num > 0) {
-      query = query.or(
-        `numero_ot.eq.${num},falla_declarada.ilike.${s}`,
-      );
-    } else {
-      query = query.ilike("falla_declarada", s);
-    }
+  if (search.length > 0) {
+    query = query
+      .ilike("f_m.marca", `%${search}%`)
+      .ilike("f_mo.modelo", `%${search}%`)
+      .or(ors.join(","));
   }
 
   if (filters.estado) {
     query = query.eq("estado", filters.estado as EstadoOrden);
+  }
+
+  if (filters.urgente) {
+    query = query.eq("es_urgente", true);
+  }
+
+  if (filters.proceso) {
+    query = query.in("estado", ESTADOS_EN_PROCESO);
   }
 
   if (filters.desde) {

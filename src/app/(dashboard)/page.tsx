@@ -78,6 +78,7 @@ export default async function DashboardPage() {
         <StatsCard
           title="Órdenes Activas"
           value={stats.total}
+          href="/ordenes"
           icon={
             <svg
               className="w-6 h-6 text-ink-secondary"
@@ -97,6 +98,7 @@ export default async function DashboardPage() {
         <StatsCard
           title="Urgentes"
           value={stats.urgentes}
+          href="/ordenes?urgente=1"
           variant={stats.urgentes > 0 ? "danger" : "default"}
           icon={
             <svg
@@ -117,6 +119,7 @@ export default async function DashboardPage() {
         <StatsCard
           title="En Proceso"
           value={stats.enProceso}
+          href="/ordenes?proceso=1"
           variant="warning"
           icon={
             <svg
@@ -143,6 +146,7 @@ export default async function DashboardPage() {
         <StatsCard
           title="Listas para Retiro"
           value={stats.listas}
+          href="/ordenes?estado=listo_para_retiro"
           variant={stats.listas > 0 ? "success" : "default"}
           icon={
             <svg

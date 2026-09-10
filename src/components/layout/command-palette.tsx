@@ -211,7 +211,7 @@ function PaletteOverlay({ onClose }: { onClose: () => void }) {
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             onKeyDown={handleInputKeyDown}
-            placeholder="Buscar orden por número, falla o cliente..."
+            placeholder="Buscar por OT, falla, cliente, marca o modelo..."
             className="flex-1 py-4 bg-transparent text-ink-primary placeholder:text-ink-muted focus:outline-none text-sm"
             role="combobox"
             aria-expanded="true"

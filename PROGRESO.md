@@ -8,7 +8,7 @@
 
 - [x] **Parte 1 — Configuraciones generales** (costo fijo mensual, WhatsApp del taller, atajos de teclado editables desde Settings)
 - [x] **Parte 2 — Shortcuts de teclado + Command Palette** (búsqueda de órdenes + acciones rápidas)
-- [ ] **Parte 3 — Dashboard clickeable + búsqueda amplia** (RPC `buscar_ordenes`, tarjetas con link, filtros urgente/proceso)
+- [~] **Parte 3 — Dashboard clickeable + búsqueda amplia** (sin RPC por ahora: búsqueda hecha con PostgREST puro validado en DB real) — falta test manual en dev
 - [ ] **Parte 4 — Clientes**: buscador (`q`) + detalle real `/clientes/[id]` (equipos + historial de órdenes)
 - [ ] **Parte 5 — Kanban mobile**: drag handle en touch, acciones siempre visibles, long-press → action sheet (WhatsApp, Ver detalle, Copiar link de tracking) + menú "···" en desktop
 - [ ] **Parte 6 — Nueva orden**: reuso automático de equipo existente, serial alfanumérico random, fix bug marcas/tipos duplicados
@@ -19,6 +19,7 @@
 - **User dev**: `dev@sierratech.com.ar` / `dev123456`.
 - Páginas de test en Chrome DevTools: `/settings` (logueado), `/tracking/db79059ac04c` (portal público).
 - Notas: `rg` NO está instalado → usar `grep`. Banco de datos prod = `crjtucqucgxiqcnhpmgs`.
+- Test de PostgREST sin dev server: `curl.exe -G --data-urlencode` + token del user dev (guardado en `%TEMP%\opencode\tok.json`; credenciales + anon key en `%TEMP%\opencode\sf.json`). Obtener token: `POST /rest/v1/../auth/v1/token?grant_type=password`. **No armar URLs a mano** (los `or=(...)`/paréntesis se corrompen) → siempre `--data-urlencode`; supabase-js mantiene los puntos/parentesis crudos (`URLSearchParams` no los escapa).
 - Evitar testear páginas aisladas en Chrome DevTools: puede perder la sesión auth.
 
 ## Parte 1 — DONE (configuraciones generales)
@@ -46,16 +47,23 @@
 - Triggers: botón de búsqueda en `src/components/layout/header.tsx` (visible desktop y mobile) + fila "Buscar Ctrl+K" en `src/components/layout/sidebar.tsx`.
 - **Probado**: `Ctrl+K` abre, "pantalla" → OT-0009, `Enter` navega a la orden, `Ctrl+N` → `/ordenes/nueva`, `ESC` cierra, viewport mobile OK.
 
-## Parte 3 — PENDIENTE
+## Parte 3 — EN CURSO (implementado sin RPC)
 
-- **RPC `buscar_ordenes`** (migración + SQL): un input que busque por `numero_ot` (si numérico), `falla_declarada` ILIKE, **nombre de cliente ILIKE**, **marca/modelo ILIKE** (joins a clientes/equipos). Params opcionales: `p_urgente boolean`, `p_proceso boolean` (estado en proceso → pase de `diagnostico|reparacion|repuesto`), `p_estado`, paginación (`p_page`, `p_page_size`), ordenado por `updated_at desc`, retorna total.
-- `src/components/ui/stats-card.tsx`: agregar prop `href` (wrap en Link) para:
-  - Activas → `/ordenes`
-  - Urgentes → `/ordenes?urgente=1`
-  - En Proceso → `/ordenes?proceso=1`
-  - Listas → `/ordenes?estado=listo_para_retiro`
-- `src/app/(dashboard)/page.tsx` (dashboard) y `/ordenes` (grid): leer los filtros de `searchParams` y aplicar en la query (o reemplazar por el RPC).
-- Opcional: conectar la palette al RPC para buscar por cliente/marca/modelo.
+> Sin acceso a Supabase MCP / psql / CLI en esta sesión → no se pudo crear la RPC `buscar_ordenes`. Se implementó con **PostgREST puro**, patrón validado contra la DB real (query exacta reproducida con supabase-js en `%TEMP%\opencode\palette_test.cjs`).
+
+- **Búsqueda amplia (palette + listado)** — OR sobre: `numero_ot` exacto (si numérico) | `falla_declarada` ILIKE | `marca` ILIKE | `modelo` ILIKE | `cliente.nombre` ILIKE. Patrón:
+  - Select con embeds alias **vacíos**: `f_m:equipos(), f_mo:equipos()`.
+  - Filtros top-level `f_m.marca=ilike.*q*` y `f_mo.modelo=ilike.*q*`.
+  - `or=(numero_ot.eq.N, falla.ilike.*q*, f_m.not.is.null, f_mo.not.is.null, [equipo_id.in.(ids)])`. **Importante**: el `f_m.not.is.null` es lo que hace que el filtro de marca/modelo propague al padre; sin él, devuelve 0 resultados.
+  - Para cliente: query previa `equipos?select=id,cliente:clientes!inner(nombre)&cliente.nombre=ilike.*q*` → `equipo_id.in.(...)` en el `or()`. (El null-check de 2 niveles `f_c.fc.not.is.null` dentro de `or()` NO parsea → PGRST100; por eso se resuelve por ids.)
+- `src/app/actions/palette.ts`: `buscarOrdenesQuick` busca por los 5 campos (antes solo OT/falla), orders `updated_at desc`, limit 8.
+- `src/lib/queries/ordenes-list.ts`: `fetchOrdenes` con la misma búsqueda amplia + filtros `urgente`/`proceso` (proceso = estado in `en_diagnostico|esperando_repuesto|en_reparacion`).
+- `src/components/ui/stats-card.tsx`: prop `href` → `StatsCard` clickeable (Link + hover). `src/app/(dashboard)/page.tsx` enlaza las 4 tarjetas: Activas→`/ordenes`, Urgentes→`/ordenes?urgente=1`, En Proceso→`/ordenes?proceso=1`, Listas→`/ordenes?estado=listo_para_retiro`.
+- `src/app/(dashboard)/ordenes/page.tsx`: lee `urgente`/`proceso` de `searchParams`. `src/components/orden/lista/ordenes-filters.tsx`: toggles "Urgentes"/"En proceso" + placeholder nuevo.
+- **Validado en DB real** (via supabase-js): `ger`→OT-9/8, `samsung`→6, `pantalla`→5, `5`→7 (incluye OT-5), `hp`→2, `aspi`→OT-7. Typecheck + eslint OK (solo warns preexistentes).
+- **Pendiente**: test manual en Chrome DevTools; opcional reemplazar por la RPC cuando haya acceso a la DB (el diseño del RPC sigue en `cambios y fixes.md`).
+
+<!-- placeholder -->
 
 ## Parte 4 — PENDIENTE
 

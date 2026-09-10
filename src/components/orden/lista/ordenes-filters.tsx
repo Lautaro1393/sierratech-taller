@@ -23,6 +23,8 @@ export function OrdenesFilters() {
 
   const search = searchParams.get("search") ?? "";
   const estado = searchParams.get("estado") ?? "";
+  const urgente = searchParams.get("urgente") === "1";
+  const proceso = searchParams.get("proceso") === "1";
   const desde = searchParams.get("desde") ?? "";
   const hasta = searchParams.get("hasta") ?? "";
 
@@ -39,7 +41,11 @@ export function OrdenesFilters() {
     });
   };
 
-  const hasFilters = search || estado || desde || hasta;
+  const toggleFlag = (key: string, current: boolean) => {
+    setParam(key, current ? "" : "1");
+  };
+
+  const hasFilters = search || estado || urgente || proceso || desde || hasta;
 
   function clearAll() {
     startTransition(() => {
@@ -54,7 +60,7 @@ export function OrdenesFilters() {
           <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-ink-muted" />
           <input
             type="text"
-            placeholder="Buscar por OT, falla..."
+            placeholder="Buscar por OT, falla, cliente, marca o modelo..."
             defaultValue={search}
             onChange={(e) => {
               const v = e.target.value;
@@ -95,6 +101,31 @@ export function OrdenesFilters() {
           className="w-full px-3 py-2 rounded-lg bg-surface-base border border-white/10 text-ink-primary text-sm focus:outline-none focus:border-accent focus:ring-1 focus:ring-accent/30 transition-all"
           placeholder="Hasta"
         />
+      </div>
+
+      <div className="flex items-center gap-2">
+        <button
+          type="button"
+          onClick={() => toggleFlag("urgente", urgente)}
+          className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+            urgente
+              ? "border-status-red/50 bg-status-red/15 text-status-red"
+              : "border-white/10 bg-surface-base text-ink-secondary hover:border-white/20"
+          }`}
+        >
+          Urgentes
+        </button>
+        <button
+          type="button"
+          onClick={() => toggleFlag("proceso", proceso)}
+          className={`px-3 py-2 rounded-lg text-sm border transition-all ${
+            proceso
+              ? "border-status-yellow/50 bg-status-yellow/15 text-status-yellow"
+              : "border-white/10 bg-surface-base text-ink-secondary hover:border-white/20"
+          }`}
+        >
+          En proceso
+        </button>
       </div>
 
       {hasFilters && (
