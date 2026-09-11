@@ -8,8 +8,8 @@
 
 - [x] **Parte 1 — Configuraciones generales** (costo fijo mensual, WhatsApp del taller, atajos de teclado editables desde Settings)
 - [x] **Parte 2 — Shortcuts de teclado + Command Palette** (búsqueda de órdenes + acciones rápidas)
-- [~] **Parte 3 — Dashboard clickeable + búsqueda amplia** (sin RPC por ahora: búsqueda hecha con PostgREST puro validado en DB real) — falta test manual en dev
-- [ ] **Parte 4 — Clientes**: buscador (`q`) + detalle real `/clientes/[id]` (equipos + historial de órdenes)
+- [x] **Parte 3 — Dashboard clickeable + búsqueda amplia** (sin RPC por ahora: búsqueda hecha con PostgREST puro validado en DB real) — testeado OK en Chrome DevTools
+- [x] **Parte 4 — Clientes**: buscador (`q`) + detalle real `/clientes/[id]` (equipos + historial de órdenes)
 - [ ] **Parte 5 — Kanban mobile**: drag handle en touch, acciones siempre visibles, long-press → action sheet (WhatsApp, Ver detalle, Copiar link de tracking) + menú "···" en desktop
 - [ ] **Parte 6 — Nueva orden**: reuso automático de equipo existente, serial alfanumérico random, fix bug marcas/tipos duplicados
 
@@ -47,7 +47,7 @@
 - Triggers: botón de búsqueda en `src/components/layout/header.tsx` (visible desktop y mobile) + fila "Buscar Ctrl+K" en `src/components/layout/sidebar.tsx`.
 - **Probado**: `Ctrl+K` abre, "pantalla" → OT-0009, `Enter` navega a la orden, `Ctrl+N` → `/ordenes/nueva`, `ESC` cierra, viewport mobile OK.
 
-## Parte 3 — EN CURSO (implementado sin RPC)
+## Parte 3 — DONE (dashboard clickeable + búsqueda amplia)
 
 > Sin acceso a Supabase MCP / psql / CLI en esta sesión → no se pudo crear la RPC `buscar_ordenes`. Se implementó con **PostgREST puro**, patrón validado contra la DB real (query exacta reproducida con supabase-js en `%TEMP%\opencode\palette_test.cjs`).
 
@@ -60,15 +60,15 @@
 - `src/lib/queries/ordenes-list.ts`: `fetchOrdenes` con la misma búsqueda amplia + filtros `urgente`/`proceso` (proceso = estado in `en_diagnostico|esperando_repuesto|en_reparacion`).
 - `src/components/ui/stats-card.tsx`: prop `href` → `StatsCard` clickeable (Link + hover). `src/app/(dashboard)/page.tsx` enlaza las 4 tarjetas: Activas→`/ordenes`, Urgentes→`/ordenes?urgente=1`, En Proceso→`/ordenes?proceso=1`, Listas→`/ordenes?estado=listo_para_retiro`.
 - `src/app/(dashboard)/ordenes/page.tsx`: lee `urgente`/`proceso` de `searchParams`. `src/components/orden/lista/ordenes-filters.tsx`: toggles "Urgentes"/"En proceso" + placeholder nuevo.
-- **Validado en DB real** (via supabase-js): `ger`→OT-9/8, `samsung`→6, `pantalla`→5, `5`→7 (incluye OT-5), `hp`→2, `aspi`→OT-7. Typecheck + eslint OK (solo warns preexistentes).
-- **Pendiente**: test manual en Chrome DevTools; opcional reemplazar por la RPC cuando haya acceso a la DB (el diseño del RPC sigue en `cambios y fixes.md`).
+- **Validado en DB real** (via supabase-js): `ger`→OT-9/8, `samsung`→6, `pantalla`→5, `5`→7 (incluye OT-5), `hp`→2, `aspi`→OT-7. Typecheck + eslint OK (solo warns preexistentes). **Testeado OK en Chrome DevTools** (palette por marca/cliente/falla + stats clickeables → filtros).
 
-<!-- placeholder -->
+## Parte 4 — DONE (clientes: buscador + detalle)
 
-## Parte 4 — PENDIENTE
-
-- `/clientes`: agregar buscador con `?q=` (nombre/telefono).
-- `/clientes/[id]`: página real (hoy placeholder/resumen) con **equipos del cliente** + **historial de órdenes**.
+- `src/lib/queries/clientes.ts` (nuevo): `fetchClientes(q?)` (or nombre/telefono ilike) + `fetchClienteDetalle(id)` (cliente + equipos + órdenes de cada equipo, con alerta de error y null si no existe).
+- `src/app/(dashboard)/clientes/page.tsx`: lee `?q=` de `searchParams`, muestra "resultados para ..." y usa `fetchClientes`. Eliminado footer placeholder.
+- `src/components/clientes/clientes-search.tsx` (nuevo): input tipo buscador, client-side, `router.replace` con debounce de transición + spinner.
+- `src/app/(dashboard)/clientes/[id]/page.tsx`: reemplaza ComingSoon → detalle real: header con nombre + contador equipos/órdenes + botón WhatsApp (`wa.me`), card con teléfono/email/cliente-desde, y por cada equipo: marca/modelo/SN/tipo + historial de órdenes (badge estado + badge Urgente) clickeables → `/ordenes/[id]`. `notFound()` si el cliente no existe.
+- **Testeado OK en Chrome DevTools**: buscador "Carlos" → 6 resultados, URL `?q=Carlos`, detalle de Carlos Pérez (2 equipos, 3 órdenes), links a órdenes OK, WhatsApp link OK, sin errores de consola.
 
 ## Parte 5 — PENDIENTE
 
@@ -92,4 +92,5 @@
 
 ## Último commit
 
-- `fb4481f` — Partes 1-2 implementadas + `PROGRESO.md` (pusheado a `origin/main`).
+- `d7cacdb` — Parte 3 (palette + dashboard clickeable) pusheado a `origin/main`.
+- Parte 4 (clientes) implementada localmente, pendiente de commit/push.

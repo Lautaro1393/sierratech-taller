@@ -1,25 +1,19 @@
 import Link from "next/link";
-import { createServerClient } from "@/lib/supabase";
+import { fetchClientes } from "@/lib/queries/clientes";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { ImportarContactosButton } from "@/components/clientes/importar-contactos-button";
 import { formatFecha } from "@/lib/utils";
-import type { Cliente } from "@/types";
+import { ClientesSearch } from "@/components/clientes/clientes-search";
 
 export const dynamic = "force-dynamic";
 
-export default async function ClientesPage() {
-  const supabase = await createServerClient();
-  const { data } = await supabase
-    .from("clientes")
-    .select("id, nombre, telefono, email, created_at")
-    .order("nombre", { ascending: true });
-
-  const clientes = (data ?? []) as Array<
-    Pick<Cliente, "id" | "nombre" | "telefono" | "email"> & { created_at: string }
-  >;
-
-  const total = clientes.length;
-  const conEmail = clientes.filter((c) => c.email).length;
+export default async function ClientesPage({
+  searchParams,
+}: {
+  searchParams: Promise<{ q?: string }>;
+}) {
+  const { q } = await searchParams;
+  const { clientes, total, conEmail } = await fetchClientes(q);
 
   return (
     <div className="space-y-6">
@@ -29,27 +23,43 @@ export default async function ClientesPage() {
             Clientes
           </h1>
           <p className="text-ink-secondary mt-1">
-            {total} {total === 1 ? "cliente" : "clientes"}
-            {conEmail > 0 && ` · ${conEmail} con email`}
+            {q ? (
+              <>
+                {total} {total === 1 ? "resultado" : "resultados"} para &ldquo;{q}&rdquo;
+              </>
+            ) : (
+              <>
+                {total} {total === 1 ? "cliente" : "clientes"}
+                {conEmail > 0 && ` · ${conEmail} con email`}
+              </>
+            )}
           </p>
         </div>
         <ImportarContactosButton />
       </div>
 
+      <ClientesSearch initialQuery={q} />
+
       {total === 0 ? (
         <Card>
           <CardContent className="p-12 text-center space-y-3">
-            <p className="text-ink-muted">Todavia no hay clientes.</p>
-            <p className="text-xs text-ink-muted">
-              Importa contactos desde tu celular o crea uno al hacer una
-              orden nueva.
+            <p className="text-ink-muted">
+              {q
+                ? `No se encontraron clientes para "${q}".`
+                : "Todavia no hay clientes."}
             </p>
+            {!q && (
+              <p className="text-xs text-ink-muted">
+                Importa contactos desde tu celular o crea uno al hacer una
+                orden nueva.
+              </p>
+            )}
           </CardContent>
         </Card>
       ) : (
         <Card>
           <CardHeader>
-            <CardTitle>Listado</CardTitle>
+            <CardTitle>{q ? "Resultados" : "Listado"}</CardTitle>
           </CardHeader>
           <CardContent>
             <ul className="divide-y divide-white/5">
@@ -84,15 +94,6 @@ export default async function ClientesPage() {
           </CardContent>
         </Card>
       )}
-
-      <div className="text-center pt-2">
-        <Link
-          href="/clientes"
-          className="text-xs text-ink-muted hover:text-ink-secondary"
-        >
-          Busqueda y filtros por cliente / equipo (Fase 9) — placeholder
-        </Link>
-      </div>
     </div>
   );
 }
