@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useTransition } from "react";
+import { useEffect, useState, useTransition } from "react";
 import { Input, Textarea } from "@/components/ui/input";
 import { Select } from "@/components/ui/select";
 import { Button } from "@/components/ui/button";
@@ -8,7 +8,8 @@ import { CurrencyInput } from "@/components/ui/currency-input";
 import { DateInput } from "@/components/ui/date-input";
 import { ClienteAutocomplete } from "./cliente-autocomplete";
 import { QrScannerButton } from "@/components/orden/scanner/qr-scanner-button";
-import { crearOrdenYRedirigir } from "@/app/actions/ordenes";
+import { buscarEquipoExistente, crearOrdenYRedirigir } from "@/app/actions/ordenes";
+import { CheckCircle2, Dices } from "lucide-react";
 import type { Cliente } from "@/types";
 
 interface OrdenFormProps {
@@ -26,6 +27,19 @@ const TIPO_BASE = [
 ];
 
 const TIPOS_BASE_VALUES = new Set(TIPO_BASE.map((t) => t.value));
+
+// Charset sin ambigüedades (sin 0/O/1/I) para que la serie sea legible
+// en etiquetas y códigos QR. Formato: XXXX-XXXX-XXXX.
+const SERIE_CHARS = "ABCDEFGHJKLMNPQRSTUVWXYZ23456789";
+
+function generarSerieAleatoria(): string {
+  const grupo = () =>
+    Array.from(
+      { length: 4 },
+      () => SERIE_CHARS[Math.floor(Math.random() * SERIE_CHARS.length)]
+    ).join("");
+  return `${grupo()}-${grupo()}-${grupo()}`;
+}
 
 export function OrdenForm({
   clientes,
@@ -47,8 +61,43 @@ export function OrdenForm({
   const [marca, setMarca] = useState<string>("");
   const [modelo, setModelo] = useState<string>("");
   const [numeroSerie, setNumeroSerie] = useState<string>("");
+  const [reusoDetectado, setReusoDetectado] = useState<string | null>(null);
 
   const tiposCustomNormalizados = tiposCustom.map((t) => t.toLowerCase());
+
+  // Hint de reuso automático: si el cliente ya tiene un equipo con la misma
+  // marca + modelo + serie, avisamos que se reutilizará (evita duplicados).
+  useEffect(() => {
+    let cancelada = false;
+    if (
+      clienteModo !== "existente" ||
+      !clienteId ||
+      marca.trim().length < 2 ||
+      modelo.trim().length < 2
+    ) {
+      return;
+    }
+    const timeout = setTimeout(async () => {
+      try {
+        const eq = await buscarEquipoExistente({
+          clienteId,
+          marca: marca.trim(),
+          modelo: modelo.trim(),
+          numeroSerie: numeroSerie.trim(),
+        });
+        if (!cancelada && eq && (eq.marca || eq.modelo)) {
+          const serie = eq.numero_serie ? ` · ${eq.numero_serie}` : "";
+          setReusoDetectado(`${eq.marca ?? ""} ${eq.modelo ?? ""}${serie}`);
+        }
+      } catch {
+        // Silencioso: el reuso igual lo resuelve el server action.
+      }
+    }, 400);
+    return () => {
+      cancelada = true;
+      clearTimeout(timeout);
+    };
+  }, [clienteModo, clienteId, marca, modelo, numeroSerie]);
 
   const tipoOptions = [
     ...TIPO_BASE,
@@ -181,7 +230,10 @@ export function OrdenForm({
           <div className="flex gap-2 text-sm">
             <button
               type="button"
-              onClick={() => setClienteModo("existente")}
+              onClick={() => {
+                setClienteModo("existente");
+                setReusoDetectado(null);
+              }}
               className={`px-3 py-1.5 rounded-md transition-colors ${
                 clienteModo === "existente"
                   ? "bg-accent/20 text-accent border border-accent/30"
@@ -195,6 +247,7 @@ export function OrdenForm({
               onClick={() => {
                 setClienteModo("nuevo");
                 setClienteId("");
+                setReusoDetectado(null);
               }}
               className={`px-3 py-1.5 rounded-md transition-colors ${
                 clienteModo === "nuevo"
@@ -211,10 +264,14 @@ export function OrdenForm({
           <ClienteAutocomplete
             clientes={clientes}
             selectedId={clienteId}
-            onSelect={setClienteId}
+            onSelect={(id) => {
+              setClienteId(id);
+              setReusoDetectado(null);
+            }}
             onNew={() => {
               setClienteModo("nuevo");
               setClienteId("");
+              setReusoDetectado(null);
             }}
           />
         ) : (
@@ -323,7 +380,10 @@ export function OrdenForm({
             required
             error={fieldErrors.marca}
             value={marca}
-            onChange={(e) => setMarca(e.target.value)}
+            onChange={(e) => {
+              setMarca(e.target.value);
+              setReusoDetectado(null);
+            }}
           />
           <Input
             name="modelo"
@@ -333,7 +393,10 @@ export function OrdenForm({
             required
             error={fieldErrors.modelo}
             value={modelo}
-            onChange={(e) => setModelo(e.target.value)}
+            onChange={(e) => {
+              setModelo(e.target.value);
+              setReusoDetectado(null);
+            }}
           />
         </div>
 
@@ -363,7 +426,10 @@ export function OrdenForm({
               type="text"
               placeholder="Para QR o etiqueta"
               value={numeroSerie}
-              onChange={(e) => setNumeroSerie(e.target.value)}
+              onChange={(e) => {
+                setNumeroSerie(e.target.value);
+                setReusoDetectado(null);
+              }}
               className={`
                 flex-1 px-3 py-2 rounded-lg
                 bg-surface-base border border-white/10
@@ -372,8 +438,25 @@ export function OrdenForm({
                 transition-all duration-200
               `}
             />
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setNumeroSerie(generarSerieAleatoria())}
+              title="Generar número de serie aleatorio"
+              className="shrink-0"
+            >
+              <Dices className="w-4 h-4" />
+              <span className="hidden sm:inline">Aleatorio</span>
+            </Button>
             <QrScannerButton onScan={(text) => setNumeroSerie(text)} />
           </div>
+          {reusoDetectado && (
+            <p className="mt-2 text-xs text-accent">
+              <CheckCircle2 className="inline w-3.5 h-3.5 -mt-0.5 mr-1" />
+              Ya tenés este equipo cargado ({reusoDetectado}). Se reutilizará
+              sin crear duplicados.
+            </p>
+          )}
         </div>
 
         <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">

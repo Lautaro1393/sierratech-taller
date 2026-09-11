@@ -126,13 +126,12 @@ export async function crearOrden(
         fieldErrors: { tipo: `Tipo "${tipoFinal}" ya existe como base` },
       };
     }
-    // Verificar duplicado contra tipos custom existentes en la DB.
-    const { data: dupRows, error: dupError } = await supabase
+    const { data: existeTipo } = await supabase
       .from("equipos")
       .select("id")
       .ilike("tipo", tipoFinal)
       .limit(1);
-    if (!dupError && dupRows && dupRows.length > 0) {
+    if (existeTipo) {
       return {
         ok: false,
         error: `El tipo "${tipoFinal}" ya existe. Seleccionalo del desplegable en lugar de crearlo de nuevo.`,
@@ -141,28 +140,54 @@ export async function crearOrden(
     }
   }
 
-  const { data: equipo, error: equipoError } = await supabase
-    .from("equipos")
-    .insert({
-      cliente_id: clienteId,
-      tipo: tipoFinal,
-      marca: data.marca,
-      modelo: data.modelo,
-      numero_serie: data.numeroSerie || null,
-      clave_desbloqueo: data.claveDesbloqueo || null,
-      accesorios: data.accesorios || null,
-    })
-    .select("id")
-    .single();
+  let equipoId: string = "";
 
-  if (equipoError || !equipo) {
-    return { ok: false, error: equipoError?.message ?? "No se pudo registrar el equipo" };
+  // Reuso automático: si el cliente ya tiene un equipo con la misma
+  // marca + modelo + serie, no creamos un duplicado; reutilizamos el id.
+  if (data.clienteModo === "existente") {
+    const equipoQuery = supabase
+      .from("equipos")
+      .select("id")
+      .eq("cliente_id", clienteId)
+      .ilike("marca", data.marca)
+      .ilike("modelo", data.modelo);
+
+    const serieQuery = data.numeroSerie?.trim()
+      ? equipoQuery.ilike("numero_serie", data.numeroSerie.trim())
+      : equipoQuery.is("numero_serie", null);
+
+    const { data: match } = await serieQuery
+      .order("created_at", { ascending: false })
+      .limit(1);
+
+    equipoId = match?.[0]?.id ?? "";
+  }
+
+  if (!equipoId) {
+    const { data: equipo, error: equipoError } = await supabase
+      .from("equipos")
+      .insert({
+        cliente_id: clienteId,
+        tipo: tipoFinal,
+        marca: data.marca,
+        modelo: data.modelo,
+        numero_serie: data.numeroSerie?.trim() || null,
+        clave_desbloqueo: data.claveDesbloqueo || null,
+        accesorios: data.accesorios || null,
+      })
+      .select("id")
+      .single();
+
+    if (equipoError || !equipo) {
+      return { ok: false, error: equipoError?.message ?? "No se pudo registrar el equipo" };
+    }
+    equipoId = equipo.id;
   }
 
   const { data: orden, error: ordenError } = await supabase
     .from("ordenes")
     .insert({
-      equipo_id: equipo.id,
+      equipo_id: equipoId,
       falla_declarada: data.fallaDeclarada,
       presupuesto: data.presupuesto ?? 0,
       es_urgente: data.esUrgente,
@@ -200,6 +225,43 @@ export async function crearOrdenYRedirigir(
     redirect(`/ordenes/${result.ordenId}`);
   }
   return result;
+}
+
+/**
+ * Busca un equipo del cliente que coincida por marca + modelo (+ serie),
+ * usando la MISMA lógica de reuso que crearOrden. Sirve para mostrar un
+ * hint en el form ("ya tenés este equipo, se reutilizará") y evitar
+ * duplicados. Devuelve null si no hay coincidencia.
+ */
+export async function buscarEquipoExistente(input: {
+  clienteId: string;
+  marca: string;
+  modelo: string;
+  numeroSerie?: string;
+}): Promise<{ marca: string | null; modelo: string | null; numero_serie: string | null } | null> {
+  const marca = input.marca?.trim() ?? "";
+  const modelo = input.modelo?.trim() ?? "";
+  if (!input.clienteId || marca.length < 2 || modelo.length < 2) return null;
+
+  const supabase = await createServerClient();
+  const serie = input.numeroSerie?.trim();
+
+  const equipoQuery = supabase
+    .from("equipos")
+    .select("marca, modelo, numero_serie")
+    .eq("cliente_id", input.clienteId)
+    .ilike("marca", marca)
+    .ilike("modelo", modelo);
+
+  const serieQuery = serie
+    ? equipoQuery.ilike("numero_serie", serie)
+    : equipoQuery.is("numero_serie", null);
+
+  const { data } = await serieQuery
+    .order("created_at", { ascending: false })
+    .limit(1);
+
+  return data?.[0] ?? null;
 }
 
 const presupuestoSchema = z.object({

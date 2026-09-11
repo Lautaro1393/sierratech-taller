@@ -11,7 +11,9 @@
 - [x] **Parte 3 — Dashboard clickeable + búsqueda amplia** (sin RPC por ahora: búsqueda hecha con PostgREST puro validado en DB real) — testeado OK en Chrome DevTools
 - [x] **Parte 4 — Clientes**: buscador (`q`) + detalle real `/clientes/[id]` (equipos + historial de órdenes)
 - [x] **Parte 5 — Kanban mobile**: drag handle en touch, acciones siempre visibles, long-press → action sheet (WhatsApp, Ver detalle, Copiar link de tracking) + menú "···" en desktop — testeado OK en Chrome DevTools
-- [ ] **Parte 6 — Nueva orden**: reuso automático de equipo existente, serial alfanumérico random, fix bug marcas/tipos duplicados
+- [x] **Parte 6 — Nueva orden**: reuso automático de equipo existente, serial alfanumérico random, fix bug marcas/tipos duplicados — testeado OK en Chrome DevTools
+- [x] **Estética visual — Fondo animado** (partículas @tsparticles, acento del branding `#2EDC1B`, 18 partículas, detrás de todo, respeta `prefers-reduced-motion`)
+- [ ] **Acciones automáticas — pendiente**: popup WhatsApp con QR de seguimiento al crear una orden y al finalizarla
 
 ## Entorno para testear
 
@@ -86,11 +88,27 @@
   - Desktop (1280x800): drag con mouse funcional de nuevo (card movida a otra columna y restaurada; conteos 2/1/3/1/4 intactos), dropdown "···" abre las 3 acciones y cierra con ESC.
   - Sin errores de consola; `npx tsc --noEmit` + `npx eslint src` limpios (solo 2 warns preexistentes).
 
-## Parte 6 — PENDIENTE
+## Parte 6 — DONE (nueva orden)
 
-- Nueva orden: si el cliente ya tiene un equipo con la misma **marca+modelo+serie**, reusarlo automáticamente (decisión confirmada).
-- Botón para generar **número de serie alfanumérico random**.
-- **Fix bug marcas/tipos duplicados** en el formulario (reproducir primero en browser; sospecha: warning `tipoCustomDuplicado` / `marcaCustomDuplicado` al elegir una opción `existente:X`).
+- **Fix bug de marcas/tipos duplicados** (`src/lib/queries/equipos.ts`): `getMarcasModelosUnicos()` comparaba `TIPOS_CONOCIDOS` (en minúscula) contra `e.tipo` sin normalizar → en la DB había "Notebook"/"Smartphone"/"Tablet" con mayúscula que entraban como tipos **custom**, generando opciones repetidas en el dropdown de Tipo. Al elegir esa opción custom duplicada, el form mandaba `tipo="otro"` + `tipoCustom="smartphone"` y el server lo rechazaba ("ya existe como categoría base") → **la leyenda de error impedía elegir**. Ahora la comparación es case-insensitive y marcas/modelos/tipos custom se deduplican en minúscula.
+- **Botón serie aleatoria** (`src/components/forms/orden-form.tsx`): `Dices` al lado de "Escanear" genera `XXXX-XXXX-XXXX` con charset sin ambigüedades (sin 0/O/1/I) para etiquetas/QR.
+- **Reuso automático de equipo**: en `crearOrden` (`src/app/actions/ordenes.ts`), si el cliente es **existente** y ya tiene un equipo con la misma `marca+modelo+serie` (case-insensitive; serie vacía matcha `IS NULL`), se reutiliza ese `equipo_id` en vez de crear otro. Nueva server action `buscarEquipoExistente` (misma lógica) para el hint del form: aviso verde "Ya tenés este equipo cargado (...) Se reutilizará sin crear duplicados." con debounce 400ms y reset en cada cambio de campos.
+- **Testeado OK en Chrome DevTools**:
+  - Dropdown de Tipo ya no muestra opciones duplicadas.
+  - "Aleatorio" → `W9QM-TRLD-3952`.
+  - Hint de reuso con Lucía Fernández (Samsung / Galaxy A52 / 123123sdfsdf) → "Ya tenés este equipo cargado…".
+  - Flujo E2E: creada OT-0014 para Lucía reutilizando su equipo existente `380c1a33…` (la cuenta de equipos de Lucía quedó en 2, sin duplicado) → orden de prueba eliminada para no ensuciar el kanban.
+  - Sin errores de consola; `npx tsc --noEmit` + `npx eslint src` limpios (solo 2 warns preexistentes).
+
+## Fondo animado (estética) — DONE
+
+- `@tsparticles/react` + `@tsparticles/all` + `@tsparticles/engine` v4.4.0 (mantenidas; en v4 NO existe `initParticlesEngine`, se usa `<ParticlesProvider init={(engine) => loadAll(engine)}>`).
+- `src/components/layout/particles-background.tsx` (nuevo): canvas cliente montado en `src/app/layout.tsx`. Config convertida de `particlesjs-config.json` pero adaptada al branding:
+  - Color **`#2EDC1B`** (acento SierraTech), forma polígono de 4 lados, links suaves (opacity 0.12/width 1.5).
+  - **Pocas partículas (18)** sin density para no penalizar el render (fpsLimit 60).
+  - Wrapper `fixed inset-0 z-0 pointer-events-none mix-blend-screen` → **queda por debajo** de sidebar, topbar, menús y tarjetas (verificado con `elementFromPoint`); los clicks pasan de largo.
+  - Respeta `prefers-reduced-motion` (mueve `particles.move.enable: false`).
+- **Verificado**: canvas presente y renderizando (incluso con Overlay/backdrop), 0 errores de consola.
 
 ## Notas / bugs conocidos pendientes (ver también CONTEXT.md)
 
@@ -100,5 +118,6 @@
 
 ## Último commit
 
-- `5608f5f` — Parte 4 (buscador + detalle real de clientes) pusheado a `origin/main`.
-- Parte 5 (kanban mobile) verificada y testeada; pending commit.
+- `ef5cf39` — Parte 5 (kanban mobile) pusheado a `origin/main`.
+- Parte 4 (`5608f5f`) y anteriores ya en `origin/main`.
+- Parte 6 + fondo animado verificados y testeados; pending commit/push.

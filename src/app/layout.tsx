@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono, Space_Grotesk, JetBrains_Mono } from "next/font/google";
 import { AuthProvider } from "@/components/auth-provider";
+import { ParticlesBackground } from "@/components/layout/particles-background";
 import "./globals.css";
 
 const geistSans = Geist({
@@ -35,6 +36,7 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
       className={`${geistSans.variable} ${geistMono.variable} ${spaceGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
     >
       <body className="min-h-full flex flex-col">
+        <ParticlesBackground />
         <AuthProvider>
           {children}
         </AuthProvider>

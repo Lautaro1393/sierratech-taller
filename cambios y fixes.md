@@ -33,4 +33,16 @@ el kanban en mobile pierde algunas funcionalidades que se hacen al hacer hover e
 - bug detectado en las marcas duplicadas no permite elegir salta una leyenda de error .
 
 
+## acciones automaticas
+
+- al crear una orden nueva sugerir con un popup para enviar un whatsapp al cliente con el qr de seguiemiento
+- 
+- al finalizar una orden nueva sugerir con un popup para enviar un whatsapp al cliente con el qr de seguiemiento
+
+## estetica visual
+
+- Agregar fondo animado 
+
+https://vincentgarreau.com/particles.js/#default
+ver particles.json
 
