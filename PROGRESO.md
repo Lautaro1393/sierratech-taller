@@ -118,6 +118,5 @@
 
 ## Último commit
 
-- `ef5cf39` — Parte 5 (kanban mobile) pusheado a `origin/main`.
-- Parte 4 (`5608f5f`) y anteriores ya en `origin/main`.
-- Parte 6 + fondo animado verificados y testeados; pending commit/push.
+- `8a9d0e5` — Parte 6 (nueva orden) + fondo animado de partículas, pusheado a `origin/main`.
+- Partes anteriores (`ef5cf39`, `5608f5f`, …) ya en `origin/main`.
