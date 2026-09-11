@@ -10,7 +10,7 @@
 - [x] **Parte 2 — Shortcuts de teclado + Command Palette** (búsqueda de órdenes + acciones rápidas)
 - [x] **Parte 3 — Dashboard clickeable + búsqueda amplia** (sin RPC por ahora: búsqueda hecha con PostgREST puro validado en DB real) — testeado OK en Chrome DevTools
 - [x] **Parte 4 — Clientes**: buscador (`q`) + detalle real `/clientes/[id]` (equipos + historial de órdenes)
-- [ ] **Parte 5 — Kanban mobile**: drag handle en touch, acciones siempre visibles, long-press → action sheet (WhatsApp, Ver detalle, Copiar link de tracking) + menú "···" en desktop
+- [x] **Parte 5 — Kanban mobile**: drag handle en touch, acciones siempre visibles, long-press → action sheet (WhatsApp, Ver detalle, Copiar link de tracking) + menú "···" en desktop — testeado OK en Chrome DevTools
 - [ ] **Parte 6 — Nueva orden**: reuso automático de equipo existente, serial alfanumérico random, fix bug marcas/tipos duplicados
 
 ## Entorno para testear
@@ -70,13 +70,21 @@
 - `src/app/(dashboard)/clientes/[id]/page.tsx`: reemplaza ComingSoon → detalle real: header con nombre + contador equipos/órdenes + botón WhatsApp (`wa.me`), card con teléfono/email/cliente-desde, y por cada equipo: marca/modelo/SN/tipo + historial de órdenes (badge estado + badge Urgente) clickeables → `/ordenes/[id]`. `notFound()` si el cliente no existe.
 - **Testeado OK en Chrome DevTools**: buscador "Carlos" → 6 resultados, URL `?q=Carlos`, detalle de Carlos Pérez (2 equipos, 3 órdenes), links a órdenes OK, WhatsApp link OK, sin errores de consola.
 
-## Parte 5 — PENDIENTE
+## Parte 5 — DONE (kanban mobile)
 
-- Kanban mobile:
-  - **Drag handle** visible en touch (evitar conflicto con long-press; el `TouchSensor` tiene delay 100).
-  - **Acciones siempre visibles** en la card (hoy ocultas).
-  - **Long-press ~500ms** → action sheet con: WhatsApp, Ver detalle, Copiar link de tracking.
-  - Desktop: menú "···" con las mismas 3 acciones.
+- `src/components/kanban/kanban-card.tsx`:
+  - **Drag handle** con `GripVertical` (`touch-none`, `cursor-grab`): en mobile solo el handle dispara el `TouchSensor` (delay 100) → el drag no compite con el long-press.
+  - **Acciones siempre visibles** en la card (WhatsApp verde, "Ver detalle", "···").
+  - **Long-press ~500ms** (solo `pointerType !== mouse`) en el cuerpo → `kanban-card-menu` en modo **sheet** fullscreen bottom (mobile) o **dropdown** portal (desktop, botón "···").
+  - Copiar link de tracking con `navigator.clipboard` (fallback textarea), estado "¡Copiado!" 1.5s + foco al botón.
+  - `useIsCoarsePointer` (hook `use-coarse-pointer`): el long-press y el sheet solo aplican en `(pointer: coarse)`; en desktop la card mantiene el drag con mouse vía `listeners`.
+  - Fix de regresión: en desktop, `{...listeners}` quedaba sobreescrito por `handlePointerDown` → el `PointerSensor` nunca se activaba (drag con mouse roto). Se delega a `listeners?.onPointerDown?.(e)` cuando `pointerType === "mouse" && !isCoarse && !isOverlay`.
+- `src/components/kanban/kanban-card-menu.tsx` (nuevo): sheet con header "Acciones" + 3 opciones; dropdown con mismo contenido; ambos portaleados a `document.body`.
+- `src/components/kanban/kanban-board.tsx`: DragOverlay + sensores (`PointerSensor` dist 8, `TouchSensor` delay 100/tol 8, `KeyboardSensor`) sin cambios.
+- **Testeado OK en Chrome DevTools**:
+  - Mobile (390x780 touch): `isCoarse=true`, handle visible (20x20); long-press en cuerpo → sheet con las 3 acciones; short-tap NO abre menú; "Copiar link" copia `http://localhost:3000/tracking/9ba55a466842`; sheet se cierra con ESC; drag por handle activa el DragOverlay y el drop no corrompe el estado (conteos intactos).
+  - Desktop (1280x800): drag con mouse funcional de nuevo (card movida a otra columna y restaurada; conteos 2/1/3/1/4 intactos), dropdown "···" abre las 3 acciones y cierra con ESC.
+  - Sin errores de consola; `npx tsc --noEmit` + `npx eslint src` limpios (solo 2 warns preexistentes).
 
 ## Parte 6 — PENDIENTE
 
@@ -92,5 +100,5 @@
 
 ## Último commit
 
-- `d7cacdb` — Parte 3 (palette + dashboard clickeable) pusheado a `origin/main`.
-- Parte 4 (clientes) implementada localmente, pendiente de commit/push.
+- `5608f5f` — Parte 4 (buscador + detalle real de clientes) pusheado a `origin/main`.
+- Parte 5 (kanban mobile) verificada y testeada; pending commit.

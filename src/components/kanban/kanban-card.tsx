@@ -1,11 +1,14 @@
 "use client";
 
 import Link from "next/link";
+import { useEffect, useRef, useState, type PointerEvent as ReactPointerEvent } from "react";
 import { useDraggable } from "@dnd-kit/core";
 import { CSS } from "@dnd-kit/utilities";
+import { GripVertical, MoreHorizontal } from "lucide-react";
 import { formatTiempoCorto, formatNumeroOt, generateWhatsAppLink } from "@/lib/utils";
 import { getSemaphoreStyles } from "@/lib/utils/semaphore";
 import { Badge } from "@/components/ui/badge";
+import { KanbanCardMenu } from "./kanban-card-menu";
 import type { OrdenConRelaciones } from "@/types";
 
 interface KanbanCardProps {
@@ -13,9 +16,35 @@ interface KanbanCardProps {
   isOverlay?: boolean;
 }
 
+const LONG_PRESS_MS = 500;
+const LONG_PRESS_TOLERANCE = 8;
+
+function useIsCoarsePointer() {
+  const [isCoarse, setIsCoarse] = useState(false);
+  useEffect(() => {
+    const mq = window.matchMedia("(pointer: coarse)");
+    const update = () => setIsCoarse(mq.matches);
+    update();
+    mq.addEventListener("change", update);
+    return () => mq.removeEventListener("change", update);
+  }, []);
+  return isCoarse;
+}
+
 export function KanbanCard({ orden, isOverlay = false }: KanbanCardProps) {
   const { attributes, listeners, setNodeRef, transform, isDragging } =
     useDraggable({ id: orden.id, disabled: isOverlay });
+
+  const isCoarse = useIsCoarsePointer();
+  const handleRef = useRef<HTMLDivElement | null>(null);
+  const moreBtnRef = useRef<HTMLButtonElement | null>(null);
+  const longPressTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const longPressOrigin = useRef<{ x: number; y: number } | null>(null);
+  const longPressFired = useRef(false);
+
+  const [menuOpen, setMenuOpen] = useState(false);
+  const [menuMode, setMenuMode] = useState<"sheet" | "dropdown">("sheet");
+  const [menuAnchor, setMenuAnchor] = useState<{ left: number; top: number } | null>(null);
 
   const semaphore = getSemaphoreStyles(
     getSemaphoreFromUpdated(orden.updated_at, orden.es_urgente)
@@ -28,6 +57,61 @@ export function KanbanCard({ orden, isOverlay = false }: KanbanCardProps) {
     nombreCliente: orden.equipo.cliente.nombre,
   });
 
+  function clearLongPress() {
+    if (longPressTimer.current) {
+      clearTimeout(longPressTimer.current);
+      longPressTimer.current = null;
+    }
+    longPressOrigin.current = null;
+  }
+
+  function handlePointerDown(e: ReactPointerEvent<HTMLDivElement>) {
+    if (e.pointerType === "mouse") {
+      if (!isCoarse && !isOverlay) listeners?.onPointerDown?.(e);
+      return;
+    }
+    if (handleRef.current && handleRef.current.contains(e.target as Node)) return;
+    longPressOrigin.current = { x: e.clientX, y: e.clientY };
+    longPressFired.current = false;
+    clearLongPress();
+    longPressTimer.current = setTimeout(() => {
+      longPressFired.current = true;
+      longPressOrigin.current = null;
+      setMenuAnchor(null);
+      setMenuMode("sheet");
+      setMenuOpen(true);
+    }, LONG_PRESS_MS);
+  }
+
+  function handlePointerMove(e: ReactPointerEvent<HTMLDivElement>) {
+    if (!longPressOrigin.current) return;
+    const dx = e.clientX - longPressOrigin.current.x;
+    const dy = e.clientY - longPressOrigin.current.y;
+    if (Math.hypot(dx, dy) > LONG_PRESS_TOLERANCE) clearLongPress();
+  }
+
+  function handlePointerEnd() {
+    clearLongPress();
+  }
+
+  function handleContextMenu(e: React.MouseEvent) {
+    if (longPressFired.current || longPressOrigin.current) e.preventDefault();
+  }
+
+  function handleOpenMenu() {
+    const rect = moreBtnRef.current?.getBoundingClientRect();
+    if (!rect) {
+      setMenuAnchor(null);
+    } else {
+      const width = 224;
+      const vw = window.innerWidth;
+      const left = Math.max(8, Math.min(rect.right - width, vw - width - 8));
+      setMenuAnchor({ left, top: rect.bottom + 4 });
+    }
+    setMenuMode(isCoarse ? "sheet" : "dropdown");
+    setMenuOpen(true);
+  }
+
   return (
     <div
       ref={isOverlay ? undefined : setNodeRef}
@@ -39,24 +123,42 @@ export function KanbanCard({ orden, isOverlay = false }: KanbanCardProps) {
       className={`
         group relative rounded-lg p-3 select-none
         bg-surface-base border border-white/5 border-l-4
-        touch-none
+        ${isCoarse ? "" : "touch-none"}
         ${semaphore}
         ${isOverlay ? "shadow-2xl shadow-black/50 rotate-1" : ""}
         ${isDragging ? "opacity-30" : ""}
         transition-shadow
       `}
-      {...(isOverlay ? {} : listeners)}
-      {...(isOverlay ? {} : attributes)}
+      {...(isOverlay || isCoarse ? {} : listeners)}
+      {...(isOverlay || isCoarse ? {} : attributes)}
+      onPointerDown={handlePointerDown}
+      onPointerMove={handlePointerMove}
+      onPointerUp={handlePointerEnd}
+      onPointerCancel={handlePointerEnd}
+      onContextMenu={handleContextMenu}
     >
       <div className="flex items-start justify-between gap-2 mb-2">
         <span className="font-mono text-sm font-semibold text-accent">
           {formatNumeroOt(orden.numero_ot)}
         </span>
-        {orden.es_urgente && (
-          <Badge variant="danger" dot>
-            Urgente
-          </Badge>
-        )}
+        <div className="flex items-center gap-1">
+          {isCoarse && !isOverlay && (
+            <div
+              ref={handleRef}
+              aria-label="Arrastrar para cambiar de columna"
+              className="cursor-grab touch-none p-0.5 rounded-md text-ink-muted active:cursor-grabbing"
+              {...listeners}
+              {...attributes}
+            >
+              <GripVertical className="w-4 h-4" />
+            </div>
+          )}
+          {orden.es_urgente && (
+            <Badge variant="danger" dot>
+              Urgente
+            </Badge>
+          )}
+        </div>
       </div>
 
       <p className="text-sm font-medium text-ink-primary line-clamp-2 mb-1">
@@ -74,13 +176,7 @@ export function KanbanCard({ orden, isOverlay = false }: KanbanCardProps) {
         <span className="text-xs text-ink-muted">
           {formatTiempoCorto(orden.updated_at)}
         </span>
-        <div
-          className={`
-            flex items-center gap-1
-            ${isOverlay ? "" : "opacity-0 group-hover:opacity-100"}
-            transition-opacity
-          `}
-        >
+        <div className="flex items-center gap-1">
           <a
             href={waLink}
             target="_blank"
@@ -119,8 +215,33 @@ export function KanbanCard({ orden, isOverlay = false }: KanbanCardProps) {
               />
             </svg>
           </Link>
+          <button
+            ref={moreBtnRef}
+            type="button"
+            onClick={(e) => {
+              e.stopPropagation();
+              handleOpenMenu();
+            }}
+            onPointerDown={(e) => e.stopPropagation()}
+            className="p-1.5 rounded-md text-ink-muted hover:text-ink-primary hover:bg-surface-hover transition-colors"
+            title="Más opciones"
+            aria-label="Más opciones"
+          >
+            <MoreHorizontal className="w-4 h-4" />
+          </button>
         </div>
       </div>
+
+      {menuOpen && (
+        <KanbanCardMenu
+          mode={menuMode}
+          waLink={waLink}
+          ordenId={orden.id}
+          publicToken={orden.public_token}
+          anchor={menuAnchor}
+          onClose={() => setMenuOpen(false)}
+        />
+      )}
     </div>
   );
 }
