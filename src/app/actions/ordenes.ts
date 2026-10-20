@@ -131,7 +131,7 @@ export async function crearOrden(
       .select("id")
       .ilike("tipo", tipoFinal)
       .limit(1);
-		if (existeTipo && existeTipo.length > 0) {
+    if (existeTipo && existeTipo.length > 0) {
       return {
         ok: false,
         error: `El tipo "${tipoFinal}" ya existe. Seleccionalo del desplegable en lugar de crearlo de nuevo.`,
