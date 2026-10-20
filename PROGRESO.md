@@ -13,6 +13,7 @@
 - [x] **Parte 5 — Kanban mobile**: drag handle en touch, acciones siempre visibles, long-press → action sheet (WhatsApp, Ver detalle, Copiar link de tracking) + menú "···" en desktop — testeado OK en Chrome DevTools
 - [x] **Parte 6 — Nueva orden**: reuso automático de equipo existente, serial alfanumérico random, fix bug marcas/tipos duplicados — testeado OK en Chrome DevTools
 - [x] **Estética visual — Fondo animado** (partículas @tsparticles, acento del branding `#2EDC1B`, 18 partículas, detrás de todo, respeta `prefers-reduced-motion`)
+- [x] **Fix bug — no se podía crear una categoría (tipo) nueva**: el guard de duplicados en `crearOrden` disparaba siempre (array vacío de Supabase es truthy) y rechazaba todo tipo nuevo — testeado E2E en Chrome DevTools
 - [ ] **Acciones automáticas — pendiente**: popup WhatsApp con QR de seguimiento al crear una orden y al finalizarla
 
 ## Entorno para testear
@@ -110,6 +111,18 @@
   - Respeta `prefers-reduced-motion` (mueve `particles.move.enable: false`).
 - **Verificado**: canvas presente y renderizando (incluso con Overlay/backdrop), 0 errores de consola.
 
+## Fix bug — no se puede crear una categoría (tipo) nueva — DONE
+
+- **Síntoma**: al dar de alta un equipo con un tipo que todavía no existía (ej. "cámara"), el form rechazaba el alta con *"El tipo X ya existe. Seleccionalo del desplegable en lugar de crearlo de nuevo."* — o sea, **era imposible crear una categoría nueva**.
+- **Causa raíz** (`src/app/actions/ordenes.ts`, `crearOrden`): el guard de duplicados hacía `if (existeTipo)` sobre el `data` de Supabase. Cuando la query `.ilike("tipo", tipoFinal).limit(1)` **no encuentra filas**, el driver devuelve `[]` (array vacío), y **`[]` es truthy** → el guard disparaba siempre. Resultado: todo tipo nuevo era rechazado como "ya existente".
+- **Fix** (`ecec964`): `if (existeTipo && existeTipo.length > 0)`.
+- **Barrido de otros `limit(1)`**: revisados `src/app/actions/ordenes.ts` y `src/lib/queries/tiempo.ts` — el resto ya usa `data?.[0]` o `.maybeSingle()`, así que no hay más falsos positivos de este tipo.
+- **Defense en depth (ya estaba)**: el cliente (`src/components/forms/orden-form.tsx`, `handleSubmit`) ya bloquea el duplicate en el submit (`TIPOS_BASE_VALORES.has(custom) || tiposCustomNormalizados.includes(custom)`) y muestra el warning mientras se tipea. El server action queda como safety net (cubre tipos duplicados de **otros** clientes, que el cliente no ve en su dropdown).
+- **Testeado OK en Chrome DevTools**:
+  - Tipo "cámara" (inexistente) → sin warning; el submit creó la orden **OT-0026** (Lucía Fernández / Canon EOS 2000D) con Equipo Tipo "cámara". Orden de prueba eliminada de la DB al terminar (historial + orden + equipo), `max(numero_ot)` volvió a 25.
+  - Tipo "placa de porton" (existente) → warning en vivo "Ya existe "placa de porton". Seleccionalo del desplegable en lugar de crearlo de nuevo." y submit bloqueado.
+  - Sin errores de consola; `npx tsc --noEmit` + `npx eslint src` limpios.
+
 ## Notas / bugs conocidos pendientes (ver también CONTEXT.md)
 
 - **OT-0011** (`a735a452-7ea2-43eb-9f2e-d4ff36c94c33`): presupuesto "sucio" (refleja cálculo que ya no coincide con la lógica actual).
@@ -118,5 +131,5 @@
 
 ## Último commit
 
-- `8a9d0e5` — Parte 6 (nueva orden) + fondo animado de partículas, pusheado a `origin/main`.
-- Partes anteriores (`ef5cf39`, `5608f5f`, …) ya en `origin/main`.
+- `ecec964` — fix: evita falso positivo al crear un tipo (categoría) nuevo, pusheado a `origin/main`.
+- Parte 6 (nueva orden) + fondo animado: `8a9d0e5` — ya en `origin/main`.
