@@ -1,3 +1,4 @@
+import Image from "next/image";
 import Link from "next/link";
 import {
   getOrdenPublicaByToken,
@@ -111,6 +112,16 @@ export default async function TrackingPage({
     <div className="min-h-screen px-4 py-8 md:py-12">
       <div className="max-w-2xl mx-auto space-y-6">
         <header className="text-center space-y-2">
+          <div className="flex justify-center">
+            <Image
+              src="/sierratech-mark.png"
+              alt="SierraTech"
+              width={48}
+              height={48}
+              className="rounded-lg"
+              priority
+            />
+          </div>
           <p className="text-xs uppercase tracking-wider text-ink-muted">
             SierraTech Taller
           </p>

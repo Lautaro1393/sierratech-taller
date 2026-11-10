@@ -1,5 +1,6 @@
 "use client";
 
+import Image from "next/image";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import { useState } from "react";
@@ -81,9 +82,19 @@ export function Sidebar({ sesionActiva, open, onClose }: SidebarProps) {
       >
         <div className="flex flex-col h-full">
           <div className="h-16 flex items-center justify-between px-4 border-b border-white/5">
-            <span className="font-display font-bold text-accent">
-              SierraTech
-            </span>
+            <div className="flex items-center gap-2">
+              <Image
+                src="/sierratech-mark.png"
+                alt=""
+                width={32}
+                height={32}
+                className="rounded-md"
+                priority
+              />
+              <span className="font-display font-bold text-accent">
+                SierraTech
+              </span>
+            </div>
             <button
               onClick={() => {
                 setCollapsed((c) => !c);
